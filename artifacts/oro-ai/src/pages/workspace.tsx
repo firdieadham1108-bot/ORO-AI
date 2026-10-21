@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useProcessEnquiry, useApproveQuotation, useListActivity, getListActivityQueryKey } from "@workspace/api-client-react";
-import type { EnquiryResult, ScheduleCheck, Quote } from "@workspace/api-client-react";
+import { useProcessEnquiry, useApproveQuotation, useListActivity, useListCommitments, getListActivityQueryKey, getListCommitmentsQueryKey } from "@workspace/api-client-react";
+import type { EnquiryResult, ScheduleCheck, Quote, Commitment } from "@workspace/api-client-react";
 import { Sparkles, Loader2, AlertTriangle, ShieldCheck, Printer, RotateCcw, Inbox, CheckCircle2 } from "lucide-react";
 import { ErrorBox } from "@/components/shell";
+import { RiskAlerts, SimulationBar } from "@/components/risk";
 import { rm, longDate, myTime } from "@/lib/util";
 
 const SAMPLES = ["Boss, can install 6 units 1.5HP at Cheras this Friday?", "Can you install aircon?"];
@@ -29,6 +30,10 @@ export default function Workspace() {
   const [sentMessage, setSentMessage] = useState("");
   const [quote, setQuote] = useState<Quote | null>(null);
   const [approvingDate, setApprovingDate] = useState<string | null>(null);
+  const [recovered, setRecovered] = useState<Commitment | null>(null);
+  const commitments = useListCommitments();
+  // Show the latest saved version of the approved quote (crew or risk status may change after approval).
+  const liveQuote = quote ? (commitments.data?.find((c) => c.quote.id === quote.id)?.quote ?? quote) : null;
 
   const analyse = () => {
     approve.reset();
@@ -42,7 +47,11 @@ export default function Workspace() {
       customerName: customer.trim(), serviceCode: result.pricing.serviceCode, quantity: result.pricing.quantity,
       requestedDate: result.analysis.requestedDate, appointmentDate: opt.date, location: result.analysis.location, message: sentMessage,
     } }, {
-      onSuccess: (q) => { setQuote(q); qc.invalidateQueries({ queryKey: getListActivityQueryKey() }); },
+      onSuccess: (q) => {
+        setQuote(q);
+        qc.invalidateQueries({ queryKey: getListActivityQueryKey() });
+        qc.invalidateQueries({ queryKey: getListCommitmentsQueryKey() });
+      },
       onSettled: () => setApprovingDate(null),
     });
   };
@@ -55,6 +64,8 @@ export default function Workspace() {
         <h1>Turn a customer message into an approved quote</h1>
         <p className="text-[13px] text-[#707b7a]">Paste the enquiry, let ORO check prices and crew, then approve the option that works.</p>
       </div>
+      <SimulationBar />
+      <RiskAlerts recovered={recovered} onRecovered={setRecovered} />
       <div className="grid gap-5 lg:grid-cols-[minmax(0,.9fr)_minmax(0,1.3fr)] items-start">
         <div className="grid gap-5 no-print">
           <section className="panel">
@@ -65,7 +76,7 @@ export default function Workspace() {
               <textarea id="msg" value={message} maxLength={2000} onChange={(e) => setMessage(e.target.value)} placeholder="Paste the customer's message here" data-testid="input-message" /></div>
             <div className="flex flex-wrap gap-2 mt-3">
               {SAMPLES.map((s, i) => (
-                <button key={i} className="btn text-left whitespace-normal h-auto py-2" onClick={() => setMessage(s)} data-testid={`button-sample-${i}`}>{s}</button>
+                <button key={i} className="btn !text-left !whitespace-normal !h-auto !py-2" onClick={() => setMessage(s)} data-testid={`button-sample-${i}`}>{s}</button>
               ))}
             </div>
             <button className="btn btn-primary w-full mt-4" disabled={!message.trim() || !customer.trim() || enquiry.isPending} onClick={analyse} data-testid="button-analyse">
@@ -79,8 +90,8 @@ export default function Workspace() {
         <div className="grid gap-5">
           {enquiry.isPending ? (
             <div className="panel grid gap-3"><div className="skeleton w-1/3" /><div className="skeleton-box" /><div className="grid sm:grid-cols-2 gap-3"><div className="skeleton-box h-48" /><div className="skeleton-box h-48" /></div></div>
-          ) : quote ? (
-            <QuotePreview quote={quote} onNew={startOver} />
+          ) : liveQuote ? (
+            <QuotePreview quote={liveQuote} onNew={startOver} />
           ) : result ? (
             <ApprovalCard result={result} onApprove={doApprove} approvingDate={approvingDate} error={approve.isError ? approve.error : null} canApprove={!!customer.trim()} />
           ) : (
@@ -207,7 +218,11 @@ function QuotePreview({ quote: x, onNew }: { quote: Quote; onNew: () => void }) 
           <div className="sm:text-right">
             <div className="eyebrow">Quotation</div>
             <div className="mono text-[15px]" data-testid="text-reference">{x.reference}</div>
-            <div className="mt-2"><span className="badge badge-green" data-testid="status-quote">Approved</span></div>
+            <div className="mt-2">
+              {x.riskStatus === "AT_RISK"
+                ? <span className="badge badge-red" data-testid="status-quote">Approved · At risk</span>
+                : <span className="badge badge-green" data-testid="status-quote">Approved</span>}
+            </div>
           </div>
         </div>
         <dl className="sheet-meta">

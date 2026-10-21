@@ -1,0 +1,25 @@
+Read MASTER_BRIEF.md (Part 10 Optional Feature C & D, and Test 10). Now that the core enquiry-to-approval flow works, we are implementing Sprint 4: Commitment Risk Monitoring & Recovery Assistant.
+
+Do NOT break the existing enquiry or approval endpoints. Add the following cleanly:
+1. Backend Endpoint (`POST /api/orbyte-sim/emergency-leave`):
+   - Simulates an event from Orbyte eLeave where Bala (Senior Technician) is granted approved emergency leave on Monday, 26 October 2026 (ref: `eLeave #LV-0499`).
+   - Inserts Bala's leave block into the database without deleting his leave.
+   - Automatically scans all confirmed/approved commitments on `2026-10-26` that depend on Bala.
+   - Updates affected commitments (like Quote #ORO-1023) to `risk_status = 'AT_RISK'` with the reason: `"Bala is on approved emergency leave (Orbyte eLeave #LV-0499); crew no longer meets Senior Technician requirement."`
+   - Searches the staff directory and schedule for a qualified replacement on `2026-10-26` who has the `Senior Installation` skill and zero overlapping leave or jobs (which should dynamically find `Chong`).
+   - Appends an entry to `activity_log` recording the leave event and risk detection.
+
+2. Backend Endpoint (`POST /api/commitments/:id/recover`):
+   - Requires Manager role (`Faizal`).
+   - Re-validates inside a database transaction that the replacement technician (`Chong`) is still available on `2026-10-26`.
+   - Swaps `Bala` -> `Chong` on the commitment, sets `risk_status = 'FEASIBLE'`, and logs the approved recovery in `activity_log`.
+
+3. Frontend UI Addition ("Simulated Orbyte eLeave Event" & Recovery Card):
+   - Add a clearly labelled simulation bar or tab: `"Simulate Orbyte Event: Approve Bala's Emergency Leave (Mon, 26 Oct)"`.
+   - When clicked after Quote #ORO-1023 is confirmed for Monday, display a prominent red `"COMMITMENT AT RISK"` alert card on the cockpit showing:
+     * Affected Quote (`#ORO-1023`), Customer, and Date (`Mon, 26 Oct`).
+     * Why it is at risk (`eLeave #LV-0499` badge — without exposing private medical details per PDPA).
+     * Recommended Recovery: `"Swap Bala -> Chong (Senior Tech, Available 8 hrs, RM0 extra cost, 0 other jobs delayed)"`.
+     * A manager action button: `[Approve Recovery & Update Orbyte Work]`.
+
+Test the full sequence (Approve Quote for Monday -> Trigger Bala Leave -> See Red At-Risk Card -> Click Approve Recovery -> Verify Chong is assigned and logged in Activity Log) and tell me how to test it in the browser.

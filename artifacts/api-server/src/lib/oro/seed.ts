@@ -5,11 +5,12 @@
 
 // dispatchOrder = the manager's preferred order for picking technicians (1 = first choice).
 // When several people are free, the scheduler picks the lowest numbers first.
+// Chong is ahead of Ali, so he is the first-choice senior stand-in if Bala drops out on Monday.
 export const SEED_STAFF = [
-  { id: 1, name: "Ali", role: "Senior Installation Technician", isSenior: true, canInstall: true, dispatchOrder: 3 },
+  { id: 1, name: "Ali", role: "Senior Installation Technician", isSenior: true, canInstall: true, dispatchOrder: 4 },
   { id: 2, name: "Bala", role: "Senior Installation Technician", isSenior: true, canInstall: true, dispatchOrder: 1 },
   { id: 3, name: "Mei", role: "Installation Technician", isSenior: false, canInstall: true, dispatchOrder: 2 },
-  { id: 4, name: "Chong", role: "Senior Installation Technician", isSenior: true, canInstall: true, dispatchOrder: 4 },
+  { id: 4, name: "Chong", role: "Senior Installation Technician", isSenior: true, canInstall: true, dispatchOrder: 3 },
   { id: 5, name: "Faizal", role: "Business Manager", isSenior: false, canInstall: false, dispatchOrder: 99 },
 ];
 

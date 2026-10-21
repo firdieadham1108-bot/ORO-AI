@@ -22,14 +22,17 @@ import type {
 import type {
   ActivityEntry,
   ApprovalInput,
+  Commitment,
   EnquiryAnalysis,
   EnquiryInput,
   EnquiryResult,
   ErrorResponse,
   GetStaffAvailabilityParams,
   HealthStatus,
+  LeaveEventResult,
   Quote,
   QuoteInput,
+  RecoveryInput,
   ResetResult,
   Service,
   StaffAvailabilityDay
@@ -807,6 +810,248 @@ export function useGetQuote<TData = Awaited<ReturnType<typeof getQuote>>, TError
 
 
 
+
+export const getSimulateEmergencyLeaveUrl = () => {
+
+
+
+
+  return `/api/orbyte-sim/emergency-leave`
+}
+
+/**
+ * Records the leave (never blocked), re-checks approved commitments that depend on Bala that day, marks them AT_RISK and recommends a replacement. Safe to call twice.
+ * @summary Simulated Orbyte eLeave event - Bala's emergency leave on Monday 26 Oct 2026 is approved
+ */
+export const simulateEmergencyLeave = async ( options?: Parameters<typeof customFetch>[1]): Promise<LeaveEventResult> => {
+
+  return customFetch<LeaveEventResult>(getSimulateEmergencyLeaveUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getSimulateEmergencyLeaveMutationKey = () => ['simulateEmergencyLeave'] as const;
+
+export const getSimulateEmergencyLeaveMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof simulateEmergencyLeave>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof simulateEmergencyLeave>>, TError,void, TContext> => {
+
+const mutationKey = getSimulateEmergencyLeaveMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof simulateEmergencyLeave>>, void> = () => {
+
+
+          return  simulateEmergencyLeave(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SimulateEmergencyLeaveMutationResult = NonNullable<Awaited<ReturnType<typeof simulateEmergencyLeave>>>
+
+    export type SimulateEmergencyLeaveMutationError = ErrorType<unknown>
+
+
+    /**
+ * @summary Simulated Orbyte eLeave event - Bala's emergency leave on Monday 26 Oct 2026 is approved
+ */
+export const useSimulateEmergencyLeave = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof simulateEmergencyLeave>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof simulateEmergencyLeave>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getSimulateEmergencyLeaveMutationOptions(options));
+    }
+
+export const getListCommitmentsUrl = () => {
+
+
+
+
+  return `/api/commitments`
+}
+
+/**
+ * @summary Approved commitments with risk status and recommended recovery (at-risk first)
+ */
+export const listCommitments = async ( options?: Parameters<typeof customFetch>[1]): Promise<Commitment[]> => {
+
+  return customFetch<Commitment[]>(getListCommitmentsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCommitmentsQueryKey = () => {
+    return [
+    `/api/commitments`
+    ] as const;
+    }
+
+
+export const getListCommitmentsQueryOptions = <TData = Awaited<ReturnType<typeof listCommitments>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCommitments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCommitmentsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCommitments>>> = ({ signal }) => listCommitments({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCommitments>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCommitmentsQueryResult = NonNullable<Awaited<ReturnType<typeof listCommitments>>>
+export type ListCommitmentsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Approved commitments with risk status and recommended recovery (at-risk first)
+ */
+
+export function useListCommitments<TData = Awaited<ReturnType<typeof listCommitments>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCommitments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCommitmentsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRecoverCommitmentUrl = (id: number,) => {
+
+
+
+
+  return `/api/commitments/${id}/recover`
+}
+
+/**
+ * Re-validates the replacement inside a database transaction before changing the crew.
+ * @summary Manager approves the recommended crew swap for an at-risk commitment
+ */
+export const recoverCommitment = async (id: number,
+    recoveryInput: RecoveryInput, options?: Parameters<typeof customFetch>[1]): Promise<Commitment> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Commitment>(getRecoverCommitmentUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(recoveryInput)
+  }
+);}
+
+
+
+
+
+export const getRecoverCommitmentMutationKey = () => ['recoverCommitment'] as const;
+
+export const getRecoverCommitmentMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recoverCommitment>>, TError,RecoverCommitmentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof recoverCommitment>>, TError,RecoverCommitmentMutationVariables, TContext> => {
+
+const mutationKey = getRecoverCommitmentMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof recoverCommitment>>, RecoverCommitmentMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  recoverCommitment(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RecoverCommitmentMutationResult = NonNullable<Awaited<ReturnType<typeof recoverCommitment>>>
+    export type RecoverCommitmentMutationBody = BodyType<RecoveryInput>
+    export type RecoverCommitmentMutationError = ErrorType<ErrorResponse>
+    export type RecoverCommitmentMutationVariables = {id: number;data: BodyType<RecoveryInput>}
+
+    /**
+ * @summary Manager approves the recommended crew swap for an at-risk commitment
+ */
+export const useRecoverCommitment = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recoverCommitment>>, TError,RecoverCommitmentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof recoverCommitment>>,
+        TError,
+        RecoverCommitmentMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRecoverCommitmentMutationOptions(options));
+    }
 
 export const getListActivityUrl = () => {
 

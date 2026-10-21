@@ -1,9 +1,9 @@
 // Manager approval: re-check the chosen date against the latest records, then save an approved quotation.
-import { logActivity } from "./db";
+import { inTransaction, logActivity } from "./db";
 import { formatLongDate, isValidDateString } from "./dates";
 import { insertQuote, type QuoteRow } from "./quotes";
 import { checkSchedule } from "./scheduling";
-import { findService } from "./services";
+import { findService, type ServiceItem } from "./services";
 
 export const MANAGER = "Faizal (Manager)";
 
@@ -31,6 +31,11 @@ export function approveQuotation(req: ApprovalRequest): ApprovalOutcome {
   }
 
   // Validate the selected date again, from the database, at the moment of approval.
+  // The check and the crew reservation run in one transaction, so two approvals cannot book the same people.
+  return inTransaction(() => approveChecked(req, service));
+}
+
+function approveChecked(req: ApprovalRequest, service: ServiceItem): ApprovalOutcome {
   const check = checkSchedule(req.appointmentDate, service.code);
   if (check.verdict !== "feasible") {
     logActivity(
@@ -53,7 +58,7 @@ export function approveQuotation(req: ApprovalRequest): ApprovalOutcome {
       approval: {
         appointmentDate: req.appointmentDate,
         approvedBy: MANAGER,
-        crew: check.crew.map((m) => (m.isSenior ? `${m.name} (senior)` : m.name)),
+        crew: check.crew,
       },
     },
     MANAGER,

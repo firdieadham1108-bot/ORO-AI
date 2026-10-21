@@ -209,6 +209,84 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /orbyte-sim/emergency-leave:
+    post:
+      operationId: simulateEmergencyLeave
+      tags: [oro]
+      summary: Simulated Orbyte eLeave event - Bala's emergency leave on Monday 26 Oct 2026 is approved
+      description: >
+        Records the leave (never blocked), re-checks approved commitments that depend on Bala that day,
+        marks them AT_RISK and recommends a replacement. Safe to call twice.
+      responses:
+        "200":
+          description: Leave recorded and commitments re-checked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LeaveEventResult"
+  /commitments:
+    get:
+      operationId: listCommitments
+      tags: [oro]
+      summary: Approved commitments with risk status and recommended recovery (at-risk first)
+      responses:
+        "200":
+          description: Commitments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Commitment"
+  /commitments/{id}/recover:
+    post:
+      operationId: recoverCommitment
+      tags: [oro]
+      summary: Manager approves the recommended crew swap for an at-risk commitment
+      description: Re-validates the replacement inside a database transaction before changing the crew.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecoveryInput"
+      responses:
+        "200":
+          description: Commitment after recovery
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Commitment"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Not the manager
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Not at risk, or the replacement is no longer available
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /activity:
     get:
       operationId: listActivity
@@ -439,8 +517,77 @@ components:
         crew:
           type: array
           items: { type: string }
+        riskStatus: { type: ["string", "null"], enum: [FEASIBLE, AT_RISK, null] }
+        riskReason: { type: ["string", "null"] }
         createdAt: { type: string }
-      required: [id, reference, companyName, customerName, location, serviceCode, serviceName, quantity, unitPrice, totalPrice, requestedDate, appointmentDate, status, approvedBy, approvedAt, crew, createdAt]
+      required: [id, reference, companyName, customerName, location, serviceCode, serviceName, quantity, unitPrice, totalPrice, requestedDate, appointmentDate, status, approvedBy, approvedAt, crew, riskStatus, riskReason, createdAt]
+    RejectedCandidate:
+      type: object
+      properties:
+        staffName: { type: string }
+        reason: { type: string }
+      required: [staffName, reason]
+    RecoveryPlan:
+      type: object
+      properties:
+        status: { type: string, enum: [replacement_found, no_replacement] }
+        unavailableStaffName: { type: string }
+        unavailableStaffId: { type: integer }
+        leaveReference: { type: string }
+        replacement:
+          oneOf:
+            - $ref: "#/components/schemas/CrewMember"
+            - type: "null"
+        availableHours: { type: number }
+        extraCost: { type: number }
+        extraCostFormatted: { type: string }
+        otherJobsDelayed: { type: integer }
+        summary: { type: string }
+        otherEligible:
+          type: array
+          items:
+            $ref: "#/components/schemas/CrewMember"
+        rejected:
+          type: array
+          items:
+            $ref: "#/components/schemas/RejectedCandidate"
+        riskReason: { type: string }
+      required: [status, unavailableStaffName, unavailableStaffId, leaveReference, replacement, availableHours, extraCost, extraCostFormatted, otherJobsDelayed, summary, otherEligible, rejected, riskReason]
+    Commitment:
+      type: object
+      properties:
+        quote:
+          $ref: "#/components/schemas/Quote"
+        recovery:
+          oneOf:
+            - $ref: "#/components/schemas/RecoveryPlan"
+            - type: "null"
+      required: [quote, recovery]
+    RecoveryInput:
+      type: object
+      properties:
+        managerName: { type: string, minLength: 1, maxLength: 80 }
+        replacementStaffId: { type: ["integer", "null"] }
+      required: [managerName]
+    LeaveEventInfo:
+      type: object
+      properties:
+        staffName: { type: string }
+        date: { type: string }
+        reference: { type: string }
+        alreadyRecorded: { type: boolean }
+      required: [staffName, date, reference, alreadyRecorded]
+    LeaveEventResult:
+      type: object
+      properties:
+        message: { type: string }
+        leave:
+          $ref: "#/components/schemas/LeaveEventInfo"
+        atRisk:
+          type: array
+          items:
+            $ref: "#/components/schemas/Commitment"
+      required: [message, leave, atRisk]
     ActivityEntry:
       type: object
       properties:

@@ -211,6 +211,8 @@ export const ListQuotesResponseItem = zod.object({
   "approvedBy": zod.string().nullable(),
   "approvedAt": zod.string().nullable(),
   "crew": zod.array(zod.string()),
+  "riskStatus": zod.union([zod.literal('FEASIBLE'),zod.literal('AT_RISK'),zod.literal(null)]).nullable(),
+  "riskReason": zod.string().nullable(),
   "createdAt": zod.string()
 })
 export const ListQuotesResponse = zod.array(ListQuotesResponseItem)
@@ -256,6 +258,8 @@ export const CreateQuoteResponse = zod.object({
   "approvedBy": zod.string().nullable(),
   "approvedAt": zod.string().nullable(),
   "crew": zod.array(zod.string()),
+  "riskStatus": zod.union([zod.literal('FEASIBLE'),zod.literal('AT_RISK'),zod.literal(null)]).nullable(),
+  "riskReason": zod.string().nullable(),
   "createdAt": zod.string()
 })
 
@@ -303,6 +307,8 @@ export const ApproveQuotationResponse = zod.object({
   "approvedBy": zod.string().nullable(),
   "approvedAt": zod.string().nullable(),
   "crew": zod.array(zod.string()),
+  "riskStatus": zod.union([zod.literal('FEASIBLE'),zod.literal('AT_RISK'),zod.literal(null)]).nullable(),
+  "riskReason": zod.string().nullable(),
   "createdAt": zod.string()
 })
 
@@ -331,7 +337,202 @@ export const GetQuoteResponse = zod.object({
   "approvedBy": zod.string().nullable(),
   "approvedAt": zod.string().nullable(),
   "crew": zod.array(zod.string()),
+  "riskStatus": zod.union([zod.literal('FEASIBLE'),zod.literal('AT_RISK'),zod.literal(null)]).nullable(),
+  "riskReason": zod.string().nullable(),
   "createdAt": zod.string()
+})
+
+
+/**
+ * Records the leave (never blocked), re-checks approved commitments that depend on Bala that day, marks them AT_RISK and recommends a replacement. Safe to call twice.
+ * @summary Simulated Orbyte eLeave event - Bala's emergency leave on Monday 26 Oct 2026 is approved
+ */
+export const SimulateEmergencyLeaveResponse = zod.object({
+  "message": zod.string(),
+  "leave": zod.object({
+  "staffName": zod.string(),
+  "date": zod.string(),
+  "reference": zod.string(),
+  "alreadyRecorded": zod.boolean()
+}),
+  "atRisk": zod.array(zod.object({
+  "quote": zod.object({
+  "id": zod.number().int(),
+  "reference": zod.string(),
+  "companyName": zod.string(),
+  "customerName": zod.string(),
+  "location": zod.string(),
+  "serviceCode": zod.string(),
+  "serviceName": zod.string(),
+  "quantity": zod.number().int(),
+  "unitPrice": zod.number(),
+  "totalPrice": zod.number(),
+  "requestedDate": zod.string(),
+  "appointmentDate": zod.string().nullable(),
+  "status": zod.enum(['draft', 'approved']),
+  "approvedBy": zod.string().nullable(),
+  "approvedAt": zod.string().nullable(),
+  "crew": zod.array(zod.string()),
+  "riskStatus": zod.union([zod.literal('FEASIBLE'),zod.literal('AT_RISK'),zod.literal(null)]).nullable(),
+  "riskReason": zod.string().nullable(),
+  "createdAt": zod.string()
+}),
+  "recovery": zod.union([zod.object({
+  "status": zod.enum(['replacement_found', 'no_replacement']),
+  "unavailableStaffName": zod.string(),
+  "unavailableStaffId": zod.number().int(),
+  "leaveReference": zod.string(),
+  "replacement": zod.union([zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "role": zod.string(),
+  "isSenior": zod.boolean()
+}),zod.null()]),
+  "availableHours": zod.number(),
+  "extraCost": zod.number(),
+  "extraCostFormatted": zod.string(),
+  "otherJobsDelayed": zod.number().int(),
+  "summary": zod.string(),
+  "otherEligible": zod.array(zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "role": zod.string(),
+  "isSenior": zod.boolean()
+})),
+  "rejected": zod.array(zod.object({
+  "staffName": zod.string(),
+  "reason": zod.string()
+})),
+  "riskReason": zod.string()
+}),zod.null()])
+}))
+})
+
+
+/**
+ * @summary Approved commitments with risk status and recommended recovery (at-risk first)
+ */
+export const ListCommitmentsResponseItem = zod.object({
+  "quote": zod.object({
+  "id": zod.number().int(),
+  "reference": zod.string(),
+  "companyName": zod.string(),
+  "customerName": zod.string(),
+  "location": zod.string(),
+  "serviceCode": zod.string(),
+  "serviceName": zod.string(),
+  "quantity": zod.number().int(),
+  "unitPrice": zod.number(),
+  "totalPrice": zod.number(),
+  "requestedDate": zod.string(),
+  "appointmentDate": zod.string().nullable(),
+  "status": zod.enum(['draft', 'approved']),
+  "approvedBy": zod.string().nullable(),
+  "approvedAt": zod.string().nullable(),
+  "crew": zod.array(zod.string()),
+  "riskStatus": zod.union([zod.literal('FEASIBLE'),zod.literal('AT_RISK'),zod.literal(null)]).nullable(),
+  "riskReason": zod.string().nullable(),
+  "createdAt": zod.string()
+}),
+  "recovery": zod.union([zod.object({
+  "status": zod.enum(['replacement_found', 'no_replacement']),
+  "unavailableStaffName": zod.string(),
+  "unavailableStaffId": zod.number().int(),
+  "leaveReference": zod.string(),
+  "replacement": zod.union([zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "role": zod.string(),
+  "isSenior": zod.boolean()
+}),zod.null()]),
+  "availableHours": zod.number(),
+  "extraCost": zod.number(),
+  "extraCostFormatted": zod.string(),
+  "otherJobsDelayed": zod.number().int(),
+  "summary": zod.string(),
+  "otherEligible": zod.array(zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "role": zod.string(),
+  "isSenior": zod.boolean()
+})),
+  "rejected": zod.array(zod.object({
+  "staffName": zod.string(),
+  "reason": zod.string()
+})),
+  "riskReason": zod.string()
+}),zod.null()])
+})
+export const ListCommitmentsResponse = zod.array(ListCommitmentsResponseItem)
+
+
+/**
+ * Re-validates the replacement inside a database transaction before changing the crew.
+ * @summary Manager approves the recommended crew swap for an at-risk commitment
+ */
+export const RecoverCommitmentParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const recoverCommitmentBodyManagerNameMax = 80;
+
+
+
+export const RecoverCommitmentBody = zod.object({
+  "managerName": zod.string().min(1).max(recoverCommitmentBodyManagerNameMax),
+  "replacementStaffId": zod.number().int().nullish()
+})
+
+export const RecoverCommitmentResponse = zod.object({
+  "quote": zod.object({
+  "id": zod.number().int(),
+  "reference": zod.string(),
+  "companyName": zod.string(),
+  "customerName": zod.string(),
+  "location": zod.string(),
+  "serviceCode": zod.string(),
+  "serviceName": zod.string(),
+  "quantity": zod.number().int(),
+  "unitPrice": zod.number(),
+  "totalPrice": zod.number(),
+  "requestedDate": zod.string(),
+  "appointmentDate": zod.string().nullable(),
+  "status": zod.enum(['draft', 'approved']),
+  "approvedBy": zod.string().nullable(),
+  "approvedAt": zod.string().nullable(),
+  "crew": zod.array(zod.string()),
+  "riskStatus": zod.union([zod.literal('FEASIBLE'),zod.literal('AT_RISK'),zod.literal(null)]).nullable(),
+  "riskReason": zod.string().nullable(),
+  "createdAt": zod.string()
+}),
+  "recovery": zod.union([zod.object({
+  "status": zod.enum(['replacement_found', 'no_replacement']),
+  "unavailableStaffName": zod.string(),
+  "unavailableStaffId": zod.number().int(),
+  "leaveReference": zod.string(),
+  "replacement": zod.union([zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "role": zod.string(),
+  "isSenior": zod.boolean()
+}),zod.null()]),
+  "availableHours": zod.number(),
+  "extraCost": zod.number(),
+  "extraCostFormatted": zod.string(),
+  "otherJobsDelayed": zod.number().int(),
+  "summary": zod.string(),
+  "otherEligible": zod.array(zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "role": zod.string(),
+  "isSenior": zod.boolean()
+})),
+  "rejected": zod.array(zod.object({
+  "staffName": zod.string(),
+  "reason": zod.string()
+})),
+  "riskReason": zod.string()
+}),zod.null()])
 })
 
 

@@ -5,6 +5,7 @@
  * ORO AI demo API (Phase 1 and 2) - staffing records, price list, enquiry analysis and quotations. All data is synthetic.
  * OpenAPI spec version: 0.1.0
  */
+import type { QuoteRiskStatus } from './quoteRiskStatus';
 import type { QuoteStatus } from './quoteStatus';
 
 export interface Quote {
@@ -27,5 +28,9 @@ export interface Quote {
   /** @nullable */
   approvedAt: string | null;
   crew: string[];
+  /** @nullable */
+  riskStatus: QuoteRiskStatus;
+  /** @nullable */
+  riskReason: string | null;
   createdAt: string;
 }

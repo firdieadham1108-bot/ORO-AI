@@ -25,7 +25,8 @@ CREATE TABLE IF NOT EXISTS capacity_blocks (
   title     TEXT NOT NULL,
   start_at  TEXT NOT NULL,
   end_at    TEXT NOT NULL,
-  reference TEXT NOT NULL
+  reference TEXT NOT NULL,
+  quote_id  INTEGER REFERENCES quotes(id) -- set when the block is a crew reservation for an approved quote
 );
 CREATE INDEX IF NOT EXISTS capacity_blocks_staff_idx ON capacity_blocks(staff_id);
 
@@ -44,6 +45,8 @@ CREATE TABLE IF NOT EXISTS quotes (
   approved_by    TEXT,
   approved_at    TEXT,
   crew           TEXT,
+  risk_status    TEXT,             -- 'FEASIBLE' or 'AT_RISK' for approved commitments
+  risk_reason    TEXT,
   message        TEXT,
   created_at     TEXT NOT NULL
 );
@@ -70,8 +73,11 @@ function upgradeOlderDatabase(database: DatabaseSync): void {
     const update = database.prepare("UPDATE staff SET dispatch_order = ? WHERE id = ? AND name = ?");
     for (const s of SEED_STAFF) update.run(s.dispatchOrder, s.id, s.name);
   }
-  for (const column of ["appointment_date", "approved_by", "approved_at", "crew"]) {
+  for (const column of ["appointment_date", "approved_by", "approved_at", "crew", "risk_status", "risk_reason"]) {
     if (!hasColumn(database, "quotes", column)) database.exec(`ALTER TABLE quotes ADD COLUMN ${column} TEXT`);
+  }
+  if (!hasColumn(database, "capacity_blocks", "quote_id")) {
+    database.exec("ALTER TABLE capacity_blocks ADD COLUMN quote_id INTEGER REFERENCES quotes(id)");
   }
 }
 
@@ -89,9 +95,13 @@ function openDatabase(): DatabaseSync {
 
 export const db: DatabaseSync = openDatabase();
 
-/** Wrap work in a transaction. DatabaseSync is synchronous, so this is atomic. */
+let transactionDepth = 0;
+
+/** Wrap work in a transaction. DatabaseSync is synchronous, so this is atomic. Nested calls join the outer one. */
 export function inTransaction<T>(work: () => T): T {
+  if (transactionDepth > 0) return work();
   db.exec("BEGIN IMMEDIATE");
+  transactionDepth++;
   try {
     const result = work();
     db.exec("COMMIT");
@@ -99,6 +109,8 @@ export function inTransaction<T>(work: () => T): T {
   } catch (error) {
     db.exec("ROLLBACK");
     throw error;
+  } finally {
+    transactionDepth--;
   }
 }
 
@@ -143,7 +155,7 @@ export function seedIfEmpty(): void {
 /** Wipe everything and restore the starting demo state (for rehearsals). */
 export function resetDemoData(): { staffCount: number; capacityBlockCount: number } {
   inTransaction(() => {
-    db.exec("DELETE FROM quotes; DELETE FROM activity_log; DELETE FROM capacity_blocks; DELETE FROM staff;");
+    db.exec("DELETE FROM capacity_blocks; DELETE FROM quotes; DELETE FROM activity_log; DELETE FROM staff;");
     db.exec("DELETE FROM sqlite_sequence WHERE name IN ('quotes', 'activity_log');");
     insertSeedData();
     logActivity("demo_reset", "Demo data was reset to its starting state.", "Demo control", "warning");

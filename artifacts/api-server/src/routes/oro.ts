@@ -11,12 +11,18 @@ import {
   ListActivityResponse,
   ListQuotesResponse,
   ListServicesResponse,
+  ListCommitmentsResponse,
+  RecoverCommitmentBody,
+  RecoverCommitmentParams,
+  RecoverCommitmentResponse,
+  SimulateEmergencyLeaveResponse,
   ProcessEnquiryBody,
   ProcessEnquiryResponse,
   ResetDemoResponse,
 } from "@workspace/api-zod";
 import { db, resetDemoData } from "../lib/oro/db";
 import { approveQuotation } from "../lib/oro/approval";
+import { listCommitments, recoverCommitment, simulateEmergencyLeave } from "../lib/oro/risk";
 import { insertQuote, toQuote, type QuoteRow } from "../lib/oro/quotes";
 import { getStaffAvailability } from "../lib/oro/availability";
 import { isValidDateString } from "../lib/oro/dates";
@@ -134,6 +140,29 @@ router.get("/quotes/:id", (req, res): void => {
     return;
   }
   res.json(GetQuoteResponse.parse(toQuote(row)));
+});
+
+router.post("/orbyte-sim/emergency-leave", (_req, res): void => {
+  res.json(SimulateEmergencyLeaveResponse.parse(simulateEmergencyLeave()));
+});
+
+router.get("/commitments", (_req, res): void => {
+  res.json(ListCommitmentsResponse.parse(listCommitments()));
+});
+
+router.post("/commitments/:id/recover", (req, res): void => {
+  const params = RecoverCommitmentParams.safeParse(req.params);
+  const body = RecoverCommitmentBody.safeParse(req.body);
+  if (!params.success || !body.success) {
+    res.status(400).json({ error: "Recovery request is incomplete or invalid." });
+    return;
+  }
+  const outcome = recoverCommitment(params.data.id, body.data);
+  if (!outcome.ok) {
+    res.status(outcome.status).json({ error: outcome.error });
+    return;
+  }
+  res.json(RecoverCommitmentResponse.parse(outcome.commitment));
 });
 
 router.get("/activity", (_req, res): void => {

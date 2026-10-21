@@ -242,6 +242,17 @@ export const QuoteStatus = {
   approved: 'approved',
 } as const;
 
+/**
+ * @nullable
+ */
+export type QuoteRiskStatus = typeof QuoteRiskStatus[keyof typeof QuoteRiskStatus] | null;
+
+
+export const QuoteRiskStatus = {
+  FEASIBLE: 'FEASIBLE',
+  AT_RISK: 'AT_RISK',
+} as const;
+
 export interface Quote {
   id: number;
   reference: string;
@@ -262,7 +273,68 @@ export interface Quote {
   /** @nullable */
   approvedAt: string | null;
   crew: string[];
+  /** @nullable */
+  riskStatus: QuoteRiskStatus;
+  /** @nullable */
+  riskReason: string | null;
   createdAt: string;
+}
+
+export interface RejectedCandidate {
+  staffName: string;
+  reason: string;
+}
+
+export type RecoveryPlanStatus = typeof RecoveryPlanStatus[keyof typeof RecoveryPlanStatus];
+
+
+export const RecoveryPlanStatus = {
+  replacement_found: 'replacement_found',
+  no_replacement: 'no_replacement',
+} as const;
+
+export interface RecoveryPlan {
+  status: RecoveryPlanStatus;
+  unavailableStaffName: string;
+  unavailableStaffId: number;
+  leaveReference: string;
+  replacement: CrewMember | null;
+  availableHours: number;
+  extraCost: number;
+  extraCostFormatted: string;
+  otherJobsDelayed: number;
+  summary: string;
+  otherEligible: CrewMember[];
+  rejected: RejectedCandidate[];
+  riskReason: string;
+}
+
+export interface Commitment {
+  quote: Quote;
+  recovery: RecoveryPlan | null;
+}
+
+export interface RecoveryInput {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  managerName: string;
+  /** @nullable */
+  replacementStaffId?: number | null;
+}
+
+export interface LeaveEventInfo {
+  staffName: string;
+  date: string;
+  reference: string;
+  alreadyRecorded: boolean;
+}
+
+export interface LeaveEventResult {
+  message: string;
+  leave: LeaveEventInfo;
+  atRisk: Commitment[];
 }
 
 export type ActivityEntrySeverity = typeof ActivityEntrySeverity[keyof typeof ActivityEntrySeverity];
