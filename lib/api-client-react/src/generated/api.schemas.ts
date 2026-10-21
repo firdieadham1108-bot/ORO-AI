@@ -206,11 +206,40 @@ export interface QuoteInput {
   message?: string | null;
 }
 
+export interface ApprovalInput {
+  /**
+     * @minLength 1
+     * @maxLength 160
+     */
+  customerName: string;
+  serviceCode: string;
+  /**
+     * @minimum 1
+     * @maximum 500
+     */
+  quantity: number;
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  requestedDate: string;
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  appointmentDate: string;
+  /**
+     * @minLength 1
+     * @maxLength 240
+     */
+  location: string;
+  /**
+     * @maxLength 2000
+     * @nullable
+     */
+  message?: string | null;
+}
+
 export type QuoteStatus = typeof QuoteStatus[keyof typeof QuoteStatus];
 
 
 export const QuoteStatus = {
   draft: 'draft',
+  approved: 'approved',
 } as const;
 
 export interface Quote {
@@ -225,7 +254,14 @@ export interface Quote {
   unitPrice: number;
   totalPrice: number;
   requestedDate: string;
+  /** @nullable */
+  appointmentDate: string | null;
   status: QuoteStatus;
+  /** @nullable */
+  approvedBy: string | null;
+  /** @nullable */
+  approvedAt: string | null;
+  crew: string[];
   createdAt: string;
 }
 

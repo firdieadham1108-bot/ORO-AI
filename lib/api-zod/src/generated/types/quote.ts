@@ -19,6 +19,13 @@ export interface Quote {
   unitPrice: number;
   totalPrice: number;
   requestedDate: string;
+  /** @nullable */
+  appointmentDate: string | null;
   status: QuoteStatus;
+  /** @nullable */
+  approvedBy: string | null;
+  /** @nullable */
+  approvedAt: string | null;
+  crew: string[];
   createdAt: string;
 }

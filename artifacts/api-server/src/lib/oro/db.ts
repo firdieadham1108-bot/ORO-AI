@@ -39,7 +39,11 @@ CREATE TABLE IF NOT EXISTS quotes (
   unit_price_sen INTEGER NOT NULL,
   total_sen      INTEGER NOT NULL,
   requested_date TEXT NOT NULL,
+  appointment_date TEXT,
   status         TEXT NOT NULL DEFAULT 'draft',
+  approved_by    TEXT,
+  approved_at    TEXT,
+  crew           TEXT,
   message        TEXT,
   created_at     TEXT NOT NULL
 );
@@ -54,13 +58,21 @@ CREATE TABLE IF NOT EXISTS activity_log (
 );
 `;
 
-/** Older demo databases were created before dispatch_order existed; add it in place. */
-function addDispatchOrderColumn(database: DatabaseSync): void {
-  const columns = database.prepare("PRAGMA table_info(staff)").all() as unknown as Array<{ name: string }>;
-  if (columns.some((c) => c.name === "dispatch_order")) return;
-  database.exec("ALTER TABLE staff ADD COLUMN dispatch_order INTEGER NOT NULL DEFAULT 100");
-  const update = database.prepare("UPDATE staff SET dispatch_order = ? WHERE id = ? AND name = ?");
-  for (const s of SEED_STAFF) update.run(s.dispatchOrder, s.id, s.name);
+function hasColumn(database: DatabaseSync, table: string, column: string): boolean {
+  const columns = database.prepare(`PRAGMA table_info(${table})`).all() as unknown as Array<{ name: string }>;
+  return columns.some((c) => c.name === column);
+}
+
+/** Bring demo databases created by earlier versions up to the current columns, in place. */
+function upgradeOlderDatabase(database: DatabaseSync): void {
+  if (!hasColumn(database, "staff", "dispatch_order")) {
+    database.exec("ALTER TABLE staff ADD COLUMN dispatch_order INTEGER NOT NULL DEFAULT 100");
+    const update = database.prepare("UPDATE staff SET dispatch_order = ? WHERE id = ? AND name = ?");
+    for (const s of SEED_STAFF) update.run(s.dispatchOrder, s.id, s.name);
+  }
+  for (const column of ["appointment_date", "approved_by", "approved_at", "crew"]) {
+    if (!hasColumn(database, "quotes", column)) database.exec(`ALTER TABLE quotes ADD COLUMN ${column} TEXT`);
+  }
 }
 
 function openDatabase(): DatabaseSync {
@@ -70,7 +82,7 @@ function openDatabase(): DatabaseSync {
   database.exec("PRAGMA journal_mode = WAL;");
   database.exec("PRAGMA foreign_keys = ON;");
   database.exec(SCHEMA);
-  addDispatchOrderColumn(database);
+  upgradeOlderDatabase(database);
   logger.info({ file }, "SQLite database ready");
   return database;
 }

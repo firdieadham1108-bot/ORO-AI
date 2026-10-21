@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import {
   AnalyseEnquiryBody,
   AnalyseEnquiryResponse,
+  ApproveQuotationBody,
   CreateQuoteBody,
   GetQuoteParams,
   GetQuoteResponse,
@@ -14,53 +15,17 @@ import {
   ProcessEnquiryResponse,
   ResetDemoResponse,
 } from "@workspace/api-zod";
-import { db, inTransaction, logActivity, resetDemoData } from "../lib/oro/db";
+import { db, resetDemoData } from "../lib/oro/db";
+import { approveQuotation } from "../lib/oro/approval";
+import { insertQuote, toQuote, type QuoteRow } from "../lib/oro/quotes";
 import { getStaffAvailability } from "../lib/oro/availability";
-import { isValidDateString, nowMyt } from "../lib/oro/dates";
+import { isValidDateString } from "../lib/oro/dates";
 import { logEnquiryAnalysed, processEnquiry } from "../lib/oro/enquiry";
 import { parseEnquiry } from "../lib/oro/parser";
-import {
-  calculateTotalSen,
-  COMPANY_NAME,
-  findService,
-  SERVICES,
-  senToRm,
-} from "../lib/oro/services";
+import { findService, SERVICES, senToRm } from "../lib/oro/services";
 
 const router: IRouter = Router();
 const SALESPERSON = "Salesperson (demo)";
-
-interface QuoteRow {
-  id: number;
-  reference: string;
-  customer_name: string;
-  location: string;
-  service_code: string;
-  quantity: number;
-  unit_price_sen: number;
-  total_sen: number;
-  requested_date: string;
-  status: string;
-  created_at: string;
-}
-
-function toQuote(row: QuoteRow) {
-  return {
-    id: row.id,
-    reference: row.reference,
-    companyName: COMPANY_NAME,
-    customerName: row.customer_name,
-    location: row.location,
-    serviceCode: row.service_code,
-    serviceName: findService(row.service_code)?.name ?? row.service_code,
-    quantity: row.quantity,
-    unitPrice: senToRm(row.unit_price_sen),
-    totalPrice: senToRm(row.total_sen),
-    requestedDate: row.requested_date,
-    status: row.status,
-    createdAt: row.created_at,
-  };
-}
 
 router.get("/staff/availability", (req, res): void => {
   const parsed = GetStaffAvailabilityQueryParams.safeParse(req.query);
@@ -127,46 +92,32 @@ router.post("/quotes", (req, res): void => {
     return;
   }
 
-  const totalSen = calculateTotalSen(body.quantity, service.unitPriceSen);
-  const created = inTransaction(() => {
-    const placeholder = `PENDING-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const insert = db
-      .prepare(
-        `INSERT INTO quotes (reference, customer_name, location, service_code, quantity, unit_price_sen,
-                             total_sen, requested_date, status, message, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?)`,
-      )
-      .run(
-        placeholder,
-        body.customerName.trim(),
-        body.location.trim(),
-        service.code,
-        body.quantity,
-        service.unitPriceSen,
-        totalSen,
-        body.requestedDate,
-        body.message ?? null,
-        nowMyt(),
-      );
-    const id = Number(insert.lastInsertRowid);
-    const reference = `ORO-Q-${body.requestedDate.slice(0, 4)}-${String(id).padStart(4, "0")}`;
-    db.prepare("UPDATE quotes SET reference = ? WHERE id = ?").run(reference, id);
-
-    logActivity(
-      "price_calculated",
-      `Price calculated for ${reference}: ${body.quantity} x RM${senToRm(service.unitPriceSen).toFixed(2)} = RM${senToRm(totalSen).toFixed(2)} (${service.name}).`,
-      "System",
-      "info",
-    );
-    logActivity(
-      "quote_created",
-      `Draft quotation ${reference} created for ${body.customerName.trim()} (${body.location.trim()}), requested date ${body.requestedDate}.`,
-      SALESPERSON,
-      "success",
-    );
-    return db.prepare("SELECT * FROM quotes WHERE id = ?").get(id) as unknown as QuoteRow;
-  });
+  const created = insertQuote(
+    {
+      customerName: body.customerName.trim(),
+      location: body.location.trim(),
+      service,
+      quantity: body.quantity,
+      requestedDate: body.requestedDate,
+      message: body.message ?? null,
+    },
+    SALESPERSON,
+  );
   res.status(201).json(GetQuoteResponse.parse(toQuote(created)));
+});
+
+router.post("/approvals", (req, res): void => {
+  const parsed = ApproveQuotationBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Approval details are incomplete or invalid." });
+    return;
+  }
+  const outcome = approveQuotation(parsed.data);
+  if (!outcome.ok) {
+    res.status(outcome.status).json({ error: outcome.error });
+    return;
+  }
+  res.status(201).json(GetQuoteResponse.parse(toQuote(outcome.quote)));
 });
 
 router.get("/quotes/:id", (req, res): void => {

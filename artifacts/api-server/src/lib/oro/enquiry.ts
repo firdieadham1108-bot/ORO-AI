@@ -2,6 +2,7 @@
 import { logActivity } from "./db";
 import { formatLongDate } from "./dates";
 import { parseEnquiry, type ParsedEnquiry } from "./parser";
+import { formatRm } from "./quotes";
 import { checkSchedule, findAlternatives, ALTERNATIVE_SEARCH_DAYS, type ScheduleCheck } from "./scheduling";
 import { calculateTotalSen, findService, senToRm } from "./services";
 
@@ -26,10 +27,6 @@ export interface EnquiryResult {
   requestedSchedule?: ScheduleCheck;
   recommendedDate?: string;
   alternatives: ScheduleCheck[];
-}
-
-export function formatRm(sen: number): string {
-  return `RM${(sen / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 /** Write the "enquiry analysed" activity entry (shared by /enquiries/analyse and /enquiry). */

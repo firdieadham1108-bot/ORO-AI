@@ -21,6 +21,7 @@ import type {
 
 import type {
   ActivityEntry,
+  ApprovalInput,
   EnquiryAnalysis,
   EnquiryInput,
   EnquiryResult,
@@ -639,6 +640,95 @@ export const useCreateQuote = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getCreateQuoteMutationOptions(options));
+    }
+
+export const getApproveQuotationUrl = () => {
+
+
+
+
+  return `/api/approvals`
+}
+
+/**
+ * Re-checks the chosen date against the latest staff records. If the date is still feasible, saves an approved quotation with the crew and writes the approval to the activity log. Returns 409 if the date is not feasible.
+ * @summary Manager approves a quotation for a chosen appointment date
+ */
+export const approveQuotation = async (approvalInput: ApprovalInput, options?: Parameters<typeof customFetch>[1]): Promise<Quote> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Quote>(getApproveQuotationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(approvalInput)
+  }
+);}
+
+
+
+
+
+export const getApproveQuotationMutationKey = () => ['approveQuotation'] as const;
+
+export const getApproveQuotationMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveQuotation>>, TError,ApproveQuotationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof approveQuotation>>, TError,ApproveQuotationMutationVariables, TContext> => {
+
+const mutationKey = getApproveQuotationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof approveQuotation>>, ApproveQuotationMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  approveQuotation(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApproveQuotationMutationResult = NonNullable<Awaited<ReturnType<typeof approveQuotation>>>
+    export type ApproveQuotationMutationBody = BodyType<ApprovalInput>
+    export type ApproveQuotationMutationError = ErrorType<ErrorResponse>
+    export type ApproveQuotationMutationVariables = {data: BodyType<ApprovalInput>}
+
+    /**
+ * @summary Manager approves a quotation for a chosen appointment date
+ */
+export const useApproveQuotation = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveQuotation>>, TError,ApproveQuotationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof approveQuotation>>,
+        TError,
+        ApproveQuotationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getApproveQuotationMutationOptions(options));
     }
 
 export const getGetQuoteUrl = (id: number,) => {

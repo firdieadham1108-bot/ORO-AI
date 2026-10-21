@@ -151,6 +151,40 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /approvals:
+    post:
+      operationId: approveQuotation
+      tags: [oro]
+      summary: Manager approves a quotation for a chosen appointment date
+      description: >
+        Re-checks the chosen date against the latest staff records. If the date is still
+        feasible, saves an approved quotation with the crew and writes the approval to the
+        activity log. Returns 409 if the date is not feasible.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApprovalInput"
+      responses:
+        "201":
+          description: Approved quotation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quote"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: The chosen date is not feasible
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /quotes/{id}:
     get:
       operationId: getQuote
@@ -373,6 +407,17 @@ components:
         location: { type: string, minLength: 1, maxLength: 240 }
         message: { type: ["string", "null"], maxLength: 2000 }
       required: [customerName, serviceCode, quantity, requestedDate, location]
+    ApprovalInput:
+      type: object
+      properties:
+        customerName: { type: string, minLength: 1, maxLength: 160 }
+        serviceCode: { type: string }
+        quantity: { type: integer, minimum: 1, maximum: 500 }
+        requestedDate: { type: string, pattern: "^\\d{4}-\\d{2}-\\d{2}$" }
+        appointmentDate: { type: string, pattern: "^\\d{4}-\\d{2}-\\d{2}$" }
+        location: { type: string, minLength: 1, maxLength: 240 }
+        message: { type: ["string", "null"], maxLength: 2000 }
+      required: [customerName, serviceCode, quantity, requestedDate, appointmentDate, location]
     Quote:
       type: object
       properties:
@@ -387,9 +432,15 @@ components:
         unitPrice: { type: number }
         totalPrice: { type: number }
         requestedDate: { type: string }
-        status: { type: string, enum: [draft] }
+        appointmentDate: { type: ["string", "null"] }
+        status: { type: string, enum: [draft, approved] }
+        approvedBy: { type: ["string", "null"] }
+        approvedAt: { type: ["string", "null"] }
+        crew:
+          type: array
+          items: { type: string }
         createdAt: { type: string }
-      required: [id, reference, companyName, customerName, location, serviceCode, serviceName, quantity, unitPrice, totalPrice, requestedDate, status, createdAt]
+      required: [id, reference, companyName, customerName, location, serviceCode, serviceName, quantity, unitPrice, totalPrice, requestedDate, appointmentDate, status, approvedBy, approvedAt, crew, createdAt]
     ActivityEntry:
       type: object
       properties:

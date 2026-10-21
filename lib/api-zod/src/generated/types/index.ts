@@ -8,6 +8,7 @@
 
 export * from './activityEntry';
 export * from './activityEntrySeverity';
+export * from './approvalInput';
 export * from './capacityBlock';
 export * from './capacityBlockKind';
 export * from './capacityConflict';

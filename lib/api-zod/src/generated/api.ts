@@ -206,7 +206,11 @@ export const ListQuotesResponseItem = zod.object({
   "unitPrice": zod.number(),
   "totalPrice": zod.number(),
   "requestedDate": zod.string(),
-  "status": zod.enum(['draft']),
+  "appointmentDate": zod.string().nullable(),
+  "status": zod.enum(['draft', 'approved']),
+  "approvedBy": zod.string().nullable(),
+  "approvedAt": zod.string().nullable(),
+  "crew": zod.array(zod.string()),
   "createdAt": zod.string()
 })
 export const ListQuotesResponse = zod.array(ListQuotesResponseItem)
@@ -247,7 +251,58 @@ export const CreateQuoteResponse = zod.object({
   "unitPrice": zod.number(),
   "totalPrice": zod.number(),
   "requestedDate": zod.string(),
-  "status": zod.enum(['draft']),
+  "appointmentDate": zod.string().nullable(),
+  "status": zod.enum(['draft', 'approved']),
+  "approvedBy": zod.string().nullable(),
+  "approvedAt": zod.string().nullable(),
+  "crew": zod.array(zod.string()),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * Re-checks the chosen date against the latest staff records. If the date is still feasible, saves an approved quotation with the crew and writes the approval to the activity log. Returns 409 if the date is not feasible.
+ * @summary Manager approves a quotation for a chosen appointment date
+ */
+export const approveQuotationBodyCustomerNameMax = 160;
+
+export const approveQuotationBodyQuantityMax = 500;
+
+export const approveQuotationBodyRequestedDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const approveQuotationBodyAppointmentDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const approveQuotationBodyLocationMax = 240;
+
+export const approveQuotationBodyMessageMax = 2000;
+
+
+
+export const ApproveQuotationBody = zod.object({
+  "customerName": zod.string().min(1).max(approveQuotationBodyCustomerNameMax),
+  "serviceCode": zod.string(),
+  "quantity": zod.number().int().min(1).max(approveQuotationBodyQuantityMax),
+  "requestedDate": zod.string().regex(approveQuotationBodyRequestedDateRegExp),
+  "appointmentDate": zod.string().regex(approveQuotationBodyAppointmentDateRegExp),
+  "location": zod.string().min(1).max(approveQuotationBodyLocationMax),
+  "message": zod.string().max(approveQuotationBodyMessageMax).nullish()
+})
+
+export const ApproveQuotationResponse = zod.object({
+  "id": zod.number().int(),
+  "reference": zod.string(),
+  "companyName": zod.string(),
+  "customerName": zod.string(),
+  "location": zod.string(),
+  "serviceCode": zod.string(),
+  "serviceName": zod.string(),
+  "quantity": zod.number().int(),
+  "unitPrice": zod.number(),
+  "totalPrice": zod.number(),
+  "requestedDate": zod.string(),
+  "appointmentDate": zod.string().nullable(),
+  "status": zod.enum(['draft', 'approved']),
+  "approvedBy": zod.string().nullable(),
+  "approvedAt": zod.string().nullable(),
+  "crew": zod.array(zod.string()),
   "createdAt": zod.string()
 })
 
@@ -271,7 +326,11 @@ export const GetQuoteResponse = zod.object({
   "unitPrice": zod.number(),
   "totalPrice": zod.number(),
   "requestedDate": zod.string(),
-  "status": zod.enum(['draft']),
+  "appointmentDate": zod.string().nullable(),
+  "status": zod.enum(['draft', 'approved']),
+  "approvedBy": zod.string().nullable(),
+  "approvedAt": zod.string().nullable(),
+  "crew": zod.array(zod.string()),
   "createdAt": zod.string()
 })
 

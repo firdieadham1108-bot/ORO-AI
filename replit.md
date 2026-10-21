@@ -19,7 +19,8 @@ Quotation and staffing-availability workspace for the fictional CoolAir Services
 - `artifacts/api-server/src/lib/oro/` — `db.ts` (4 tables: staff, capacity_blocks, quotes, activity_log), `seed.ts` (synthetic data), `availability.ts`, `parser.ts` (rule-based enquiry extraction), `services.ts` (price list), `scheduling.ts` (crew rules, feasibility, alternative dates), `enquiry.ts` (one-call workflow behind `POST /api/enquiry`)
 - `artifacts/api-server/tests/acceptance.test.mjs` — acceptance tests (Tests 1, 3, 4); run `pnpm --filter @workspace/api-server run test:acceptance` (resets demo data first)
 - `artifacts/api-server/src/routes/oro.ts` — API routes; contract in `lib/api-spec/openapi.yaml`
-- `artifacts/oro-ai/src/pages/` — availability, new enquiry, quotes, quote preview, activity log
+- `artifacts/oro-ai/src/pages/workspace.tsx` — the single-page workspace: enquiry input (left), approval card with Option A/B and quotation preview (right)
+- `artifacts/api-server/src/lib/oro/approval.ts` + `quotes.ts` — `POST /api/approvals` re-checks the chosen date, saves an approved quote and logs it
 
 ## Architecture decisions
 
@@ -31,4 +32,4 @@ Quotation and staffing-availability workspace for the fictional CoolAir Services
 
 ## Scope
 
-Phases 1-3 (setup, seeded data, quotation, availability checking and alternative dates via the API). The web pages do not yet show the Phase 3 result. Manager approval, reservations and risk monitoring are not built yet.
+Phases 1-3 plus a basic manager approval: one workspace page; approving a date re-checks availability, saves an approved quote (approver fixed as Faizal) and writes the activity log. Approval does NOT yet reserve the crew (no capacity block), so the same crew can be approved twice. Risk monitoring is not built.
