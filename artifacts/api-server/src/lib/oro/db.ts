@@ -13,7 +13,8 @@ CREATE TABLE IF NOT EXISTS staff (
   name        TEXT NOT NULL,
   role        TEXT NOT NULL,
   is_senior   INTEGER NOT NULL DEFAULT 0,
-  can_install INTEGER NOT NULL DEFAULT 0
+  can_install INTEGER NOT NULL DEFAULT 0,
+  dispatch_order INTEGER NOT NULL DEFAULT 100
 );
 
 -- Time already taken: approved leave (simulated eLeave) or a job assignment (simulated Orbyte Work).
@@ -53,6 +54,15 @@ CREATE TABLE IF NOT EXISTS activity_log (
 );
 `;
 
+/** Older demo databases were created before dispatch_order existed; add it in place. */
+function addDispatchOrderColumn(database: DatabaseSync): void {
+  const columns = database.prepare("PRAGMA table_info(staff)").all() as unknown as Array<{ name: string }>;
+  if (columns.some((c) => c.name === "dispatch_order")) return;
+  database.exec("ALTER TABLE staff ADD COLUMN dispatch_order INTEGER NOT NULL DEFAULT 100");
+  const update = database.prepare("UPDATE staff SET dispatch_order = ? WHERE id = ? AND name = ?");
+  for (const s of SEED_STAFF) update.run(s.dispatchOrder, s.id, s.name);
+}
+
 function openDatabase(): DatabaseSync {
   const file = process.env["ORO_DB_PATH"] ?? path.resolve(process.cwd(), "data", "oro.db");
   fs.mkdirSync(path.dirname(file), { recursive: true });
@@ -60,6 +70,7 @@ function openDatabase(): DatabaseSync {
   database.exec("PRAGMA journal_mode = WAL;");
   database.exec("PRAGMA foreign_keys = ON;");
   database.exec(SCHEMA);
+  addDispatchOrderColumn(database);
   logger.info({ file }, "SQLite database ready");
   return database;
 }
@@ -92,10 +103,10 @@ export function logActivity(
 
 function insertSeedData(): void {
   const insertStaff = db.prepare(
-    "INSERT INTO staff (id, name, role, is_senior, can_install) VALUES (?, ?, ?, ?, ?)",
+    "INSERT INTO staff (id, name, role, is_senior, can_install, dispatch_order) VALUES (?, ?, ?, ?, ?, ?)",
   );
   for (const s of SEED_STAFF) {
-    insertStaff.run(s.id, s.name, s.role, s.isSenior ? 1 : 0, s.canInstall ? 1 : 0);
+    insertStaff.run(s.id, s.name, s.role, s.isSenior ? 1 : 0, s.canInstall ? 1 : 0, s.dispatchOrder);
   }
   const insertBlock = db.prepare(
     "INSERT INTO capacity_blocks (id, staff_id, kind, title, start_at, end_at, reference) VALUES (?, ?, ?, ?, ?, ?, ?)",

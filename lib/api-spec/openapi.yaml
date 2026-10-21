@@ -86,6 +86,34 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /enquiry:
+    post:
+      operationId: processEnquiry
+      tags: [oro]
+      summary: Read a customer message, calculate the price and check crew availability
+      description: >
+        One call that extracts the job details, calculates the price from the price list,
+        checks the requested date against staff leave and job records, and suggests the
+        next feasible dates when the requested date does not work.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EnquiryInput"
+      responses:
+        "200":
+          description: Extracted details, price, availability verdict and alternatives
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnquiryResult"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /quotes:
     get:
       operationId: listQuotes
@@ -255,6 +283,86 @@ components:
           items: { type: string }
         clarification: { type: ["string", "null"] }
       required: [serviceCode, quantity, specification, requestedDate, location, referenceDate, missing, clarification]
+    Pricing:
+      type: object
+      properties:
+        serviceCode: { type: string }
+        serviceName: { type: string }
+        quantity: { type: integer }
+        unitPrice: { type: number }
+        totalPrice: { type: number }
+        totalFormatted: { type: string }
+      required: [serviceCode, serviceName, quantity, unitPrice, totalPrice, totalFormatted]
+    CrewRequirement:
+      type: object
+      properties:
+        crewSize: { type: integer }
+        minSeniors: { type: integer }
+        windowHours: { type: integer }
+      required: [crewSize, minSeniors, windowHours]
+    CrewMember:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        role: { type: string }
+        isSenior: { type: boolean }
+      required: [id, name, role, isSenior]
+    CapacityConflict:
+      type: object
+      properties:
+        staffId: { type: integer }
+        staffName: { type: string }
+        kind: { type: string, enum: [leave, assignment] }
+        title: { type: string }
+        reference: { type: string }
+        startAt: { type: string }
+        endAt: { type: string }
+        description: { type: string }
+      required: [staffId, staffName, kind, title, reference, startAt, endAt, description]
+    ScheduleCheck:
+      type: object
+      properties:
+        date: { type: string }
+        weekday: { type: string }
+        verdict: { type: string, enum: [feasible, not_feasible, needs_verification] }
+        workingDay: { type: boolean }
+        windowStart: { type: string }
+        windowEnd: { type: string }
+        requirement:
+          $ref: "#/components/schemas/CrewRequirement"
+        availableInstallers: { type: integer }
+        availableSeniorInstallers: { type: integer }
+        crew:
+          type: array
+          items:
+            $ref: "#/components/schemas/CrewMember"
+        conflicts:
+          type: array
+          items:
+            $ref: "#/components/schemas/CapacityConflict"
+        reasons:
+          type: array
+          items: { type: string }
+        explanation: { type: string }
+      required: [date, weekday, verdict, workingDay, windowStart, windowEnd, requirement, availableInstallers, availableSeniorInstallers, crew, conflicts, reasons, explanation]
+    EnquiryResult:
+      type: object
+      properties:
+        status: { type: string, enum: [needs_information, feasible, conflict, needs_verification] }
+        summary: { type: string }
+        analysis:
+          $ref: "#/components/schemas/EnquiryAnalysis"
+        pricing:
+          $ref: "#/components/schemas/Pricing"
+        requestedSchedule:
+          $ref: "#/components/schemas/ScheduleCheck"
+        recommendedDate: { type: string }
+        alternatives:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScheduleCheck"
+      required: [status, summary, analysis, alternatives]
     QuoteInput:
       type: object
       properties:

@@ -16,7 +16,8 @@ Quotation and staffing-availability workspace for the fictional CoolAir Services
 
 ## Where things live
 
-- `artifacts/api-server/src/lib/oro/` — `db.ts` (4 tables: staff, capacity_blocks, quotes, activity_log), `seed.ts` (synthetic data), `availability.ts`, `parser.ts` (rule-based enquiry extraction), `services.ts` (price list)
+- `artifacts/api-server/src/lib/oro/` — `db.ts` (4 tables: staff, capacity_blocks, quotes, activity_log), `seed.ts` (synthetic data), `availability.ts`, `parser.ts` (rule-based enquiry extraction), `services.ts` (price list), `scheduling.ts` (crew rules, feasibility, alternative dates), `enquiry.ts` (one-call workflow behind `POST /api/enquiry`)
+- `artifacts/api-server/tests/acceptance.test.mjs` — acceptance tests (Tests 1, 3, 4); run `pnpm --filter @workspace/api-server run test:acceptance` (resets demo data first)
 - `artifacts/api-server/src/routes/oro.ts` — API routes; contract in `lib/api-spec/openapi.yaml`
 - `artifacts/oro-ai/src/pages/` — availability, new enquiry, quotes, quote preview, activity log
 
@@ -25,7 +26,9 @@ Quotation and staffing-availability workspace for the fictional CoolAir Services
 - Availability, prices and parsing are deterministic code, never AI. Availability uses real datetime overlap against 09:00-17:00 Malaysia time.
 - "Today" is fixed at 2026-10-21 (override with `ORO_REFERENCE_DATE`) so "this Friday" always resolves to 23 Oct 2026.
 - Prices are stored in sen (integers). Totals are computed on the server.
+- Demo crew rule: installation needs 2 technicians incl. 1 senior, 8-hour window (09:00-17:00). Other services need 1 technician. Working days are Mon-Fri, so weekends are never suggested. These are fictional business rules.
+- When several technicians are free, the scheduler picks by `staff.dispatch_order` (Bala, Mei, Ali, Chong), so the Monday crew is Bala + Mei as in the brief.
 
 ## Scope
 
-Phase 1 and 2 only (setup, seeded data, quotation). Crew feasibility checks, alternative dates, approval and risk monitoring are not built yet.
+Phases 1-3 (setup, seeded data, quotation, availability checking and alternative dates via the API). The web pages do not yet show the Phase 3 result. Manager approval, reservations and risk monitoring are not built yet.

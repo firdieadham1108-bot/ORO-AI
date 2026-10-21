@@ -8,6 +8,7 @@ interface StaffRow {
   role: string;
   is_senior: number;
   can_install: number;
+  dispatch_order: number;
 }
 interface BlockRow {
   id: number;
@@ -50,6 +51,7 @@ export function getStaffAvailability(date: string) {
       role: person.role,
       isSenior: person.is_senior === 1,
       canInstall: person.can_install === 1,
+      dispatchOrder: person.dispatch_order,
       status,
       blocks,
     };

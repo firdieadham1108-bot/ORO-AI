@@ -94,6 +94,92 @@ export interface EnquiryAnalysis {
   clarification: string | null;
 }
 
+export interface Pricing {
+  serviceCode: string;
+  serviceName: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  totalFormatted: string;
+}
+
+export interface CrewRequirement {
+  crewSize: number;
+  minSeniors: number;
+  windowHours: number;
+}
+
+export interface CrewMember {
+  id: number;
+  name: string;
+  role: string;
+  isSenior: boolean;
+}
+
+export type CapacityConflictKind = typeof CapacityConflictKind[keyof typeof CapacityConflictKind];
+
+
+export const CapacityConflictKind = {
+  leave: 'leave',
+  assignment: 'assignment',
+} as const;
+
+export interface CapacityConflict {
+  staffId: number;
+  staffName: string;
+  kind: CapacityConflictKind;
+  title: string;
+  reference: string;
+  startAt: string;
+  endAt: string;
+  description: string;
+}
+
+export type ScheduleCheckVerdict = typeof ScheduleCheckVerdict[keyof typeof ScheduleCheckVerdict];
+
+
+export const ScheduleCheckVerdict = {
+  feasible: 'feasible',
+  not_feasible: 'not_feasible',
+  needs_verification: 'needs_verification',
+} as const;
+
+export interface ScheduleCheck {
+  date: string;
+  weekday: string;
+  verdict: ScheduleCheckVerdict;
+  workingDay: boolean;
+  windowStart: string;
+  windowEnd: string;
+  requirement: CrewRequirement;
+  availableInstallers: number;
+  availableSeniorInstallers: number;
+  crew: CrewMember[];
+  conflicts: CapacityConflict[];
+  reasons: string[];
+  explanation: string;
+}
+
+export type EnquiryResultStatus = typeof EnquiryResultStatus[keyof typeof EnquiryResultStatus];
+
+
+export const EnquiryResultStatus = {
+  needs_information: 'needs_information',
+  feasible: 'feasible',
+  conflict: 'conflict',
+  needs_verification: 'needs_verification',
+} as const;
+
+export interface EnquiryResult {
+  status: EnquiryResultStatus;
+  summary: string;
+  analysis: EnquiryAnalysis;
+  pricing?: Pricing;
+  requestedSchedule?: ScheduleCheck;
+  recommendedDate?: string;
+  alternatives: ScheduleCheck[];
+}
+
 export interface QuoteInput {
   /**
      * @minLength 1

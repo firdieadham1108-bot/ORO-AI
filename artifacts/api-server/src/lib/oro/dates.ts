@@ -53,6 +53,20 @@ export function makeDate(year: number, month: number, day: number): string | nul
   return isValidDateString(text) ? text : null;
 }
 
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+/** "Friday, 23 October 2026" */
+export function formatLongDate(value: string): string {
+  const d = fromDateString(value);
+  return `${weekdayOf(value)}, ${d.getUTCDate()} ${MONTH_NAMES[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+}
+
+/** Human label for the fixed working window below. */
+export const WORKING_WINDOW_LABEL = "9:00 am to 5:00 pm";
+
 /** Start/end of the working window (09:00-17:00 MYT, eight hours) for a calendar date. */
 export function workingWindow(date: string): { start: string; end: string } {
   return { start: `${date}T09:00:00${MYT_OFFSET}`, end: `${date}T17:00:00${MYT_OFFSET}` };

@@ -89,6 +89,109 @@ export const AnalyseEnquiryResponse = zod.object({
 
 
 /**
+ * One call that extracts the job details, calculates the price from the price list, checks the requested date against staff leave and job records, and suggests the next feasible dates when the requested date does not work.
+ * @summary Read a customer message, calculate the price and check crew availability
+ */
+export const processEnquiryBodyMessageMax = 2000;
+
+
+
+export const ProcessEnquiryBody = zod.object({
+  "message": zod.string().min(1).max(processEnquiryBodyMessageMax)
+})
+
+export const ProcessEnquiryResponse = zod.object({
+  "status": zod.enum(['needs_information', 'feasible', 'conflict', 'needs_verification']),
+  "summary": zod.string(),
+  "analysis": zod.object({
+  "serviceCode": zod.string().nullable(),
+  "quantity": zod.number().int().nullable(),
+  "specification": zod.string().nullable(),
+  "requestedDate": zod.string().nullable(),
+  "location": zod.string().nullable(),
+  "referenceDate": zod.string(),
+  "missing": zod.array(zod.string()),
+  "clarification": zod.string().nullable()
+}),
+  "pricing": zod.object({
+  "serviceCode": zod.string(),
+  "serviceName": zod.string(),
+  "quantity": zod.number().int(),
+  "unitPrice": zod.number(),
+  "totalPrice": zod.number(),
+  "totalFormatted": zod.string()
+}).optional(),
+  "requestedSchedule": zod.object({
+  "date": zod.string(),
+  "weekday": zod.string(),
+  "verdict": zod.enum(['feasible', 'not_feasible', 'needs_verification']),
+  "workingDay": zod.boolean(),
+  "windowStart": zod.string(),
+  "windowEnd": zod.string(),
+  "requirement": zod.object({
+  "crewSize": zod.number().int(),
+  "minSeniors": zod.number().int(),
+  "windowHours": zod.number().int()
+}),
+  "availableInstallers": zod.number().int(),
+  "availableSeniorInstallers": zod.number().int(),
+  "crew": zod.array(zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "role": zod.string(),
+  "isSenior": zod.boolean()
+})),
+  "conflicts": zod.array(zod.object({
+  "staffId": zod.number().int(),
+  "staffName": zod.string(),
+  "kind": zod.enum(['leave', 'assignment']),
+  "title": zod.string(),
+  "reference": zod.string(),
+  "startAt": zod.string(),
+  "endAt": zod.string(),
+  "description": zod.string()
+})),
+  "reasons": zod.array(zod.string()),
+  "explanation": zod.string()
+}).optional(),
+  "recommendedDate": zod.string().optional(),
+  "alternatives": zod.array(zod.object({
+  "date": zod.string(),
+  "weekday": zod.string(),
+  "verdict": zod.enum(['feasible', 'not_feasible', 'needs_verification']),
+  "workingDay": zod.boolean(),
+  "windowStart": zod.string(),
+  "windowEnd": zod.string(),
+  "requirement": zod.object({
+  "crewSize": zod.number().int(),
+  "minSeniors": zod.number().int(),
+  "windowHours": zod.number().int()
+}),
+  "availableInstallers": zod.number().int(),
+  "availableSeniorInstallers": zod.number().int(),
+  "crew": zod.array(zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "role": zod.string(),
+  "isSenior": zod.boolean()
+})),
+  "conflicts": zod.array(zod.object({
+  "staffId": zod.number().int(),
+  "staffName": zod.string(),
+  "kind": zod.enum(['leave', 'assignment']),
+  "title": zod.string(),
+  "reference": zod.string(),
+  "startAt": zod.string(),
+  "endAt": zod.string(),
+  "description": zod.string()
+})),
+  "reasons": zod.array(zod.string()),
+  "explanation": zod.string()
+}))
+})
+
+
+/**
  * @summary List quotations, newest first
  */
 export const ListQuotesResponseItem = zod.object({

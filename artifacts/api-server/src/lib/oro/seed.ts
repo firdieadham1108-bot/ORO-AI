@@ -3,12 +3,14 @@
 // Friday 23 Oct 2026 has no spare qualified crew purely because of these records;
 // availability is always calculated from the database, never hard-coded.
 
+// dispatchOrder = the manager's preferred order for picking technicians (1 = first choice).
+// When several people are free, the scheduler picks the lowest numbers first.
 export const SEED_STAFF = [
-  { id: 1, name: "Ali", role: "Senior Installation Technician", isSenior: true, canInstall: true },
-  { id: 2, name: "Bala", role: "Senior Installation Technician", isSenior: true, canInstall: true },
-  { id: 3, name: "Mei", role: "Installation Technician", isSenior: false, canInstall: true },
-  { id: 4, name: "Chong", role: "Senior Installation Technician", isSenior: true, canInstall: true },
-  { id: 5, name: "Faizal", role: "Business Manager", isSenior: false, canInstall: false },
+  { id: 1, name: "Ali", role: "Senior Installation Technician", isSenior: true, canInstall: true, dispatchOrder: 3 },
+  { id: 2, name: "Bala", role: "Senior Installation Technician", isSenior: true, canInstall: true, dispatchOrder: 1 },
+  { id: 3, name: "Mei", role: "Installation Technician", isSenior: false, canInstall: true, dispatchOrder: 2 },
+  { id: 4, name: "Chong", role: "Senior Installation Technician", isSenior: true, canInstall: true, dispatchOrder: 4 },
+  { id: 5, name: "Faizal", role: "Business Manager", isSenior: false, canInstall: false, dispatchOrder: 99 },
 ];
 
 export const SEED_BLOCKS = [

@@ -23,6 +23,7 @@ import type {
   ActivityEntry,
   EnquiryAnalysis,
   EnquiryInput,
+  EnquiryResult,
   ErrorResponse,
   GetStaffAvailabilityParams,
   HealthStatus,
@@ -384,6 +385,95 @@ export const useAnalyseEnquiry = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getAnalyseEnquiryMutationOptions(options));
+    }
+
+export const getProcessEnquiryUrl = () => {
+
+
+
+
+  return `/api/enquiry`
+}
+
+/**
+ * One call that extracts the job details, calculates the price from the price list, checks the requested date against staff leave and job records, and suggests the next feasible dates when the requested date does not work.
+ * @summary Read a customer message, calculate the price and check crew availability
+ */
+export const processEnquiry = async (enquiryInput: EnquiryInput, options?: Parameters<typeof customFetch>[1]): Promise<EnquiryResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<EnquiryResult>(getProcessEnquiryUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(enquiryInput)
+  }
+);}
+
+
+
+
+
+export const getProcessEnquiryMutationKey = () => ['processEnquiry'] as const;
+
+export const getProcessEnquiryMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof processEnquiry>>, TError,ProcessEnquiryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof processEnquiry>>, TError,ProcessEnquiryMutationVariables, TContext> => {
+
+const mutationKey = getProcessEnquiryMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof processEnquiry>>, ProcessEnquiryMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  processEnquiry(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ProcessEnquiryMutationResult = NonNullable<Awaited<ReturnType<typeof processEnquiry>>>
+    export type ProcessEnquiryMutationBody = BodyType<EnquiryInput>
+    export type ProcessEnquiryMutationError = ErrorType<ErrorResponse>
+    export type ProcessEnquiryMutationVariables = {data: BodyType<EnquiryInput>}
+
+    /**
+ * @summary Read a customer message, calculate the price and check crew availability
+ */
+export const useProcessEnquiry = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof processEnquiry>>, TError,ProcessEnquiryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof processEnquiry>>,
+        TError,
+        ProcessEnquiryMutationVariables,
+        TContext
+      > => {
+      return useMutation(getProcessEnquiryMutationOptions(options));
     }
 
 export const getListQuotesUrl = () => {

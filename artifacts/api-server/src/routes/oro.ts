@@ -10,11 +10,14 @@ import {
   ListActivityResponse,
   ListQuotesResponse,
   ListServicesResponse,
+  ProcessEnquiryBody,
+  ProcessEnquiryResponse,
   ResetDemoResponse,
 } from "@workspace/api-zod";
 import { db, inTransaction, logActivity, resetDemoData } from "../lib/oro/db";
 import { getStaffAvailability } from "../lib/oro/availability";
 import { isValidDateString, nowMyt } from "../lib/oro/dates";
+import { logEnquiryAnalysed, processEnquiry } from "../lib/oro/enquiry";
 import { parseEnquiry } from "../lib/oro/parser";
 import {
   calculateTotalSen,
@@ -89,21 +92,17 @@ router.post("/enquiries/analyse", (req, res): void => {
     return;
   }
   const result = parseEnquiry(parsed.data.message);
-  const summary = [
-    result.serviceCode ?? "service unknown",
-    result.quantity !== null ? `${result.quantity} unit(s)` : "quantity unknown",
-    result.requestedDate ?? "date unknown",
-    result.location ?? "location unknown",
-  ].join(", ");
-  logActivity(
-    "enquiry_analysed",
-    result.missing.length === 0
-      ? `Enquiry analysed: ${summary}.`
-      : `Enquiry analysed with missing details (${result.missing.join("; ")}): ${summary}.`,
-    SALESPERSON,
-    result.missing.length === 0 ? "info" : "warning",
-  );
+  logEnquiryAnalysed(result);
   res.json(AnalyseEnquiryResponse.parse(result));
+});
+
+router.post("/enquiry", (req, res): void => {
+  const parsed = ProcessEnquiryBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Please enter the customer message to analyse." });
+    return;
+  }
+  res.json(ProcessEnquiryResponse.parse(processEnquiry(parsed.data.message)));
 });
 
 router.get("/quotes", (_req, res): void => {
