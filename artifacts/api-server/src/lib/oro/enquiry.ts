@@ -8,9 +8,18 @@ import { calculateTotalSen, findService, senToRm } from "./services";
 
 const SALESPERSON = "Salesperson (demo)";
 
-export type EnquiryStatus = "needs_information" | "feasible" | "conflict" | "needs_verification";
+export type EnquiryStatus = "needs_clarification" | "feasible" | "conflict" | "needs_verification";
+
+export interface PricingLine {
+  serviceCode: string;
+  serviceName: string;
+  quantity: number;
+  unitPrice: number;
+  lineTotal: number;
+}
 
 export interface Pricing {
+  lines: PricingLine[];
   serviceCode: string;
   serviceName: string;
   quantity: number;
@@ -29,11 +38,17 @@ export interface EnquiryResult {
   alternatives: ScheduleCheck[];
 }
 
+/** "2 x RM160.00 + 3 x RM80.00" */
+function calculationText(lines: Array<{ quantity: number; service: { unitPriceSen: number } }>): string {
+  return lines.map((l) => `${l.quantity} x ${formatRm(l.service.unitPriceSen)}`).join(" + ");
+}
+
 /** Write the "enquiry analysed" activity entry (shared by /enquiries/analyse and /enquiry). */
 export function logEnquiryAnalysed(result: ParsedEnquiry): void {
   const summary = [
-    result.serviceCode ?? "service unknown",
-    result.quantity !== null ? `${result.quantity} unit(s)` : "quantity unknown",
+    result.items.length
+      ? result.items.map((i) => `${i.quantity ?? "?"} x ${i.serviceCode ?? `${i.serviceKind} (${i.specification ?? "size?"})`}`).join(" + ")
+      : "service unknown",
     result.requestedDate ?? "date unknown",
     result.location ?? "location unknown",
   ].join(", ");
@@ -51,22 +66,34 @@ export function processEnquiry(message: string): EnquiryResult {
   const analysis = parseEnquiry(message);
   logEnquiryAnalysed(analysis);
 
-  // Price: server-side, from the price list only.
-  const service = analysis.serviceCode ? findService(analysis.serviceCode) : undefined;
+  // Price: server-side, from the price list only. Only when every line can be priced
+  // (no confident quotation while something is still missing).
   let pricing: Pricing | undefined;
-  if (service && analysis.quantity !== null) {
-    const totalSen = calculateTotalSen(analysis.quantity, service.unitPriceSen);
+  const lines = analysis.items.flatMap((item) => {
+    const service = item.serviceCode ? findService(item.serviceCode) : undefined;
+    return service && item.quantity !== null ? [{ service, quantity: item.quantity }] : [];
+  });
+  if (analysis.items.length > 0 && lines.length === analysis.items.length) {
+    const totalSen = lines.reduce((sum, l) => sum + calculateTotalSen(l.quantity, l.service.unitPriceSen), 0);
+    const primary = lines.find((l) => l.service.code === analysis.serviceCode) ?? lines[0]!;
     pricing = {
-      serviceCode: service.code,
-      serviceName: service.name,
-      quantity: analysis.quantity,
-      unitPrice: senToRm(service.unitPriceSen),
+      lines: lines.map((l) => ({
+        serviceCode: l.service.code,
+        serviceName: l.service.name,
+        quantity: l.quantity,
+        unitPrice: senToRm(l.service.unitPriceSen),
+        lineTotal: senToRm(calculateTotalSen(l.quantity, l.service.unitPriceSen)),
+      })),
+      serviceCode: primary.service.code,
+      serviceName: primary.service.name,
+      quantity: primary.quantity,
+      unitPrice: senToRm(primary.service.unitPriceSen),
       totalPrice: senToRm(totalSen),
       totalFormatted: formatRm(totalSen),
     };
     logActivity(
       "price_calculated",
-      `Price calculated: ${analysis.quantity} x ${formatRm(service.unitPriceSen)} = ${formatRm(totalSen)} (${service.name}).`,
+      `Price calculated: ${calculationText(lines)} = ${formatRm(totalSen)} (${lines.map((l) => l.service.name).join(" + ")}).`,
       "System",
       "info",
     );
@@ -99,7 +126,7 @@ export function processEnquiry(message: string): EnquiryResult {
   const recommended = alternatives[0];
   const status: EnquiryStatus =
     analysis.missing.length > 0
-      ? "needs_information"
+      ? "needs_clarification"
       : requestedSchedule?.verdict === "feasible"
         ? "feasible"
         : requestedSchedule?.verdict === "not_feasible"
@@ -109,7 +136,7 @@ export function processEnquiry(message: string): EnquiryResult {
   const parts: string[] = [];
   if (pricing) {
     parts.push(
-      `Quotation total: ${pricing.totalFormatted} (${pricing.quantity} x ${formatRm(Math.round(pricing.unitPrice * 100))}).`,
+      `Quotation total: ${pricing.totalFormatted} (${pricing.lines.map((l) => `${l.quantity} x ${formatRm(Math.round(l.unitPrice * 100))}`).join(" + ")}).`,
     );
   }
   if (analysis.missing.length > 0 && analysis.clarification) parts.push(analysis.clarification);

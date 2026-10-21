@@ -77,6 +77,27 @@ export interface EnquiryInput {
   message: string;
 }
 
+export type ParsedItemServiceKind = typeof ParsedItemServiceKind[keyof typeof ParsedItemServiceKind];
+
+
+export const ParsedItemServiceKind = {
+  install: 'install',
+  standard_service: 'standard_service',
+  chemical_wash: 'chemical_wash',
+} as const;
+
+export interface ParsedItem {
+  /** @nullable */
+  serviceCode: string | null;
+  serviceKind: ParsedItemServiceKind;
+  /** @nullable */
+  quantity: number | null;
+  /** @nullable */
+  specification: string | null;
+  /** @nullable */
+  issue: string | null;
+}
+
 export interface EnquiryAnalysis {
   /** @nullable */
   serviceCode: string | null;
@@ -84,6 +105,7 @@ export interface EnquiryAnalysis {
   quantity: number | null;
   /** @nullable */
   specification: string | null;
+  items: ParsedItem[];
   /** @nullable */
   requestedDate: string | null;
   /** @nullable */
@@ -94,7 +116,16 @@ export interface EnquiryAnalysis {
   clarification: string | null;
 }
 
+export interface PricingLine {
+  serviceCode: string;
+  serviceName: string;
+  quantity: number;
+  unitPrice: number;
+  lineTotal: number;
+}
+
 export interface Pricing {
+  lines: PricingLine[];
   serviceCode: string;
   serviceName: string;
   quantity: number;
@@ -164,7 +195,7 @@ export type EnquiryResultStatus = typeof EnquiryResultStatus[keyof typeof Enquir
 
 
 export const EnquiryResultStatus = {
-  needs_information: 'needs_information',
+  needs_clarification: 'needs_clarification',
   feasible: 'feasible',
   conflict: 'conflict',
   needs_verification: 'needs_verification',
@@ -206,6 +237,15 @@ export interface QuoteInput {
   message?: string | null;
 }
 
+export type ApprovalInputExtraItemsItem = {
+  serviceCode: string;
+  /**
+     * @minimum 1
+     * @maximum 500
+     */
+  quantity: number;
+};
+
 export interface ApprovalInput {
   /**
      * @minLength 1
@@ -232,6 +272,16 @@ export interface ApprovalInput {
      * @nullable
      */
   message?: string | null;
+  /**
+     * @maxItems 5
+     * @nullable
+     */
+  extraItems?: ApprovalInputExtraItemsItem[] | null;
+  /**
+     * @maxLength 80
+     * @nullable
+     */
+  approverName?: string | null;
 }
 
 export type QuoteStatus = typeof QuoteStatus[keyof typeof QuoteStatus];
@@ -273,6 +323,7 @@ export interface Quote {
   /** @nullable */
   approvedAt: string | null;
   crew: string[];
+  lineItems: PricingLine[];
   /** @nullable */
   riskStatus: QuoteRiskStatus;
   /** @nullable */

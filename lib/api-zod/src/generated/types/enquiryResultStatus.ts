@@ -10,7 +10,7 @@ export type EnquiryResultStatus = typeof EnquiryResultStatus[keyof typeof Enquir
 
 
 export const EnquiryResultStatus = {
-  needs_information: 'needs_information',
+  needs_clarification: 'needs_clarification',
   feasible: 'feasible',
   conflict: 'conflict',
   needs_verification: 'needs_verification',

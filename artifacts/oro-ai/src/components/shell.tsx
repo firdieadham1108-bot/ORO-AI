@@ -2,7 +2,8 @@ import { ReactNode, useState } from "react";
 import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { useResetDemo } from "@workspace/api-client-react";
-import { RotateCcw, AlertTriangle, Loader2 } from "lucide-react";
+import { RotateCcw, AlertTriangle, Loader2, UserRound, ShieldCheck } from "lucide-react";
+import { ROLES, useRole, type RoleKey } from "@/lib/role";
 import { errText } from "@/lib/util";
 
 export function Shell({ children }: { children: ReactNode }) {
@@ -11,7 +12,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const qc = useQueryClient();
   const reset = useResetDemo();
   const doReset = () => {
-    if (!window.confirm("Reset all demo data? The current enquiry and any approvals will be cleared.")) return;
+    if (!window.confirm("Reset the demo state? All quotes, approvals, leave events and activity go back to the starting data.")) return;
     reset.mutate(undefined, {
       onSuccess: (r) => {
         qc.invalidateQueries();
@@ -27,17 +28,20 @@ export function Shell({ children }: { children: ReactNode }) {
       <div className="demo-banner" data-testid="text-demo-label">Demo Environment - Simulated Orbyte Data</div>
       <div className="app-shell">
         <div className="workspace solo">
-          <header className="topbar">
+          <header className="topbar !h-auto min-h-[58px] !py-2 flex-wrap gap-2">
             <Link href="/" className="flex items-center gap-3 no-underline">
               <span className="brand-mark">O</span>
               <span className="leading-tight">
-                <span className="block text-[17px] font-extrabold tracking-tight text-[#28343d]" style={{ fontFamily: "Manrope" }}>ORO AI</span>
+                <span className="block whitespace-nowrap text-[17px] font-extrabold tracking-tight text-[#28343d]" style={{ fontFamily: "Manrope" }}>ORO AI</span>
                 <span className="hidden sm:block text-[11px] text-[#777f7d]">CoolAir Services Sdn Bhd · Cheras, Kuala Lumpur</span>
               </span>
             </Link>
-            <button className="btn no-print" onClick={doReset} disabled={reset.isPending} data-testid="button-reset-demo">
-              {reset.isPending ? <Loader2 className="spin" /> : <RotateCcw />} <span>Reset Demo Data</span>
-            </button>
+            <div className="flex items-center gap-2 justify-between sm:justify-end w-full sm:w-auto no-print">
+              <RoleSwitch />
+              <button className="btn" onClick={doReset} disabled={reset.isPending} data-testid="button-reset-demo">
+                {reset.isPending ? <Loader2 className="spin" /> : <RotateCcw />} <span className="hidden sm:inline">Reset Demo State</span><span className="sm:hidden">Reset Demo</span>
+              </button>
+            </div>
           </header>
           <div key={gen}>{children}</div>
           <footer className="no-print px-4 sm:px-8 pb-8 text-[11px] text-[#848b85]">
@@ -51,6 +55,35 @@ export function Shell({ children }: { children: ReactNode }) {
         )}
       </div>
     </>
+  );
+}
+
+function RoleSwitch() {
+  const { role, setRole } = useRole();
+  const options: Array<[RoleKey, typeof UserRound]> = [["sales", UserRound], ["manager", ShieldCheck]];
+  return (
+    <div className="flex items-center gap-2">
+      <span className="hidden md:inline text-[10px] uppercase tracking-wider text-[#7b857f]" style={{ fontFamily: "IBM Plex Mono" }}>Demo role</span>
+      <div role="radiogroup" aria-label="Demo role" className="inline-flex rounded-lg border border-[#ded9ce] bg-[#f0ede4] p-0.5" data-testid="toggle-role">
+        {options.map(([key, Icon]) => {
+          const active = role === key;
+          return (
+            <button
+              key={key}
+              role="radio"
+              aria-checked={active}
+              onClick={() => setRole(key)}
+              className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[11px] font-semibold transition-colors ${
+                active ? (key === "manager" ? "bg-[#2f6e52] text-white shadow-sm" : "bg-white text-[#35434a] shadow-sm") : "text-[#6b7570] hover:text-[#35434a]"
+              }`}
+              data-testid={`button-role-${key}`}
+            >
+              <Icon size={13} /> <span className="hidden sm:inline">{ROLES[key].label}</span><span className="sm:hidden">{key === "sales" ? "Sales (Mei)" : "Manager (Faizal)"}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 

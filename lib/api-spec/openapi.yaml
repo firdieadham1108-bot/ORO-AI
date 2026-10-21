@@ -179,6 +179,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: The demo role is not the manager
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "409":
           description: The chosen date is not feasible
           content:
@@ -387,6 +393,10 @@ components:
         serviceCode: { type: ["string", "null"] }
         quantity: { type: ["integer", "null"] }
         specification: { type: ["string", "null"] }
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ParsedItem"
         requestedDate: { type: ["string", "null"] }
         location: { type: ["string", "null"] }
         referenceDate: { type: string }
@@ -394,17 +404,39 @@ components:
           type: array
           items: { type: string }
         clarification: { type: ["string", "null"] }
-      required: [serviceCode, quantity, specification, requestedDate, location, referenceDate, missing, clarification]
-    Pricing:
+      required: [serviceCode, quantity, specification, items, requestedDate, location, referenceDate, missing, clarification]
+    ParsedItem:
+      type: object
+      properties:
+        serviceCode: { type: ["string", "null"] }
+        serviceKind: { type: string, enum: [install, standard_service, chemical_wash] }
+        quantity: { type: ["integer", "null"] }
+        specification: { type: ["string", "null"] }
+        issue: { type: ["string", "null"] }
+      required: [serviceCode, serviceKind, quantity, specification, issue]
+    PricingLine:
       type: object
       properties:
         serviceCode: { type: string }
         serviceName: { type: string }
         quantity: { type: integer }
         unitPrice: { type: number }
+        lineTotal: { type: number }
+      required: [serviceCode, serviceName, quantity, unitPrice, lineTotal]
+    Pricing:
+      type: object
+      properties:
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/PricingLine"
+        serviceCode: { type: string }
+        serviceName: { type: string }
+        quantity: { type: integer }
+        unitPrice: { type: number }
         totalPrice: { type: number }
         totalFormatted: { type: string }
-      required: [serviceCode, serviceName, quantity, unitPrice, totalPrice, totalFormatted]
+      required: [lines, serviceCode, serviceName, quantity, unitPrice, totalPrice, totalFormatted]
     CrewRequirement:
       type: object
       properties:
@@ -461,7 +493,7 @@ components:
     EnquiryResult:
       type: object
       properties:
-        status: { type: string, enum: [needs_information, feasible, conflict, needs_verification] }
+        status: { type: string, enum: [needs_clarification, feasible, conflict, needs_verification] }
         summary: { type: string }
         analysis:
           $ref: "#/components/schemas/EnquiryAnalysis"
@@ -495,6 +527,16 @@ components:
         appointmentDate: { type: string, pattern: "^\\d{4}-\\d{2}-\\d{2}$" }
         location: { type: string, minLength: 1, maxLength: 240 }
         message: { type: ["string", "null"], maxLength: 2000 }
+        extraItems:
+          type: ["array", "null"]
+          maxItems: 5
+          items:
+            type: object
+            properties:
+              serviceCode: { type: string }
+              quantity: { type: integer, minimum: 1, maximum: 500 }
+            required: [serviceCode, quantity]
+        approverName: { type: ["string", "null"], maxLength: 80 }
       required: [customerName, serviceCode, quantity, requestedDate, appointmentDate, location]
     Quote:
       type: object
@@ -517,10 +559,14 @@ components:
         crew:
           type: array
           items: { type: string }
+        lineItems:
+          type: array
+          items:
+            $ref: "#/components/schemas/PricingLine"
         riskStatus: { type: ["string", "null"], enum: [FEASIBLE, AT_RISK, null] }
         riskReason: { type: ["string", "null"] }
         createdAt: { type: string }
-      required: [id, reference, companyName, customerName, location, serviceCode, serviceName, quantity, unitPrice, totalPrice, requestedDate, appointmentDate, status, approvedBy, approvedAt, crew, riskStatus, riskReason, createdAt]
+      required: [id, reference, companyName, customerName, location, serviceCode, serviceName, quantity, unitPrice, totalPrice, requestedDate, appointmentDate, status, approvedBy, approvedAt, crew, lineItems, riskStatus, riskReason, createdAt]
     RejectedCandidate:
       type: object
       properties:

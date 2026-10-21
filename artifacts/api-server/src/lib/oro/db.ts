@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS quotes (
   crew           TEXT,
   risk_status    TEXT,             -- 'FEASIBLE' or 'AT_RISK' for approved commitments
   risk_reason    TEXT,
+  line_items     TEXT,             -- JSON list of {code, quantity, unitPriceSen}; main columns hold the first line
   message        TEXT,
   created_at     TEXT NOT NULL
 );
@@ -73,7 +74,7 @@ function upgradeOlderDatabase(database: DatabaseSync): void {
     const update = database.prepare("UPDATE staff SET dispatch_order = ? WHERE id = ? AND name = ?");
     for (const s of SEED_STAFF) update.run(s.dispatchOrder, s.id, s.name);
   }
-  for (const column of ["appointment_date", "approved_by", "approved_at", "crew", "risk_status", "risk_reason"]) {
+  for (const column of ["appointment_date", "approved_by", "approved_at", "crew", "risk_status", "risk_reason", "line_items"]) {
     if (!hasColumn(database, "quotes", column)) database.exec(`ALTER TABLE quotes ADD COLUMN ${column} TEXT`);
   }
   if (!hasColumn(database, "capacity_blocks", "quote_id")) {

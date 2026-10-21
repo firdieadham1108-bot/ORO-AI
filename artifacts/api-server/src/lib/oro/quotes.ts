@@ -21,7 +21,20 @@ export interface QuoteRow {
   crew: string | null;
   risk_status: string | null;
   risk_reason: string | null;
+  line_items: string | null;
   created_at: string;
+}
+
+interface StoredLine {
+  code: string;
+  quantity: number;
+  unitPriceSen: number;
+}
+
+/** All lines of a quote. Older single-service quotes fall back to their main columns. */
+function linesOf(row: QuoteRow): StoredLine[] {
+  if (row.line_items) return JSON.parse(row.line_items) as StoredLine[];
+  return [{ code: row.service_code, quantity: row.quantity, unitPriceSen: row.unit_price_sen }];
 }
 
 export function toQuote(row: QuoteRow) {
@@ -42,6 +55,13 @@ export function toQuote(row: QuoteRow) {
     approvedBy: row.approved_by,
     approvedAt: row.approved_at,
     crew: row.crew ? (JSON.parse(row.crew) as string[]) : [],
+    lineItems: linesOf(row).map((l) => ({
+      serviceCode: l.code,
+      serviceName: findService(l.code)?.name ?? l.code,
+      quantity: l.quantity,
+      unitPrice: senToRm(l.unitPriceSen),
+      lineTotal: senToRm(calculateTotalSen(l.quantity, l.unitPriceSen)),
+    })),
     riskStatus: row.risk_status,
     riskReason: row.risk_reason,
     createdAt: row.created_at,
@@ -66,6 +86,8 @@ export interface NewQuote {
   location: string;
   service: ServiceItem;
   quantity: number;
+  /** Further services on the same visit (e.g. servicing alongside an installation). */
+  extraLines?: Array<{ service: ServiceItem; quantity: number }>;
   requestedDate: string;
   message: string | null;
   approval?: { appointmentDate: string; approvedBy: string; crew: CrewMember[] };
@@ -73,7 +95,10 @@ export interface NewQuote {
 
 /** Insert a quotation and its activity entries in one transaction. Returns the stored row. */
 export function insertQuote(input: NewQuote, actor: string): QuoteRow {
-  const totalSen = calculateTotalSen(input.quantity, input.service.unitPriceSen);
+  const lines = [{ service: input.service, quantity: input.quantity }, ...(input.extraLines ?? [])];
+  const totalSen = lines.reduce((sum, l) => sum + calculateTotalSen(l.quantity, l.service.unitPriceSen), 0);
+  const calculation = lines.map((l) => `${l.quantity} x ${formatRm(l.service.unitPriceSen)}`).join(" + ");
+  const description = lines.map((l) => `${l.quantity} x ${l.service.name}`).join(" + ");
   const now = nowMyt();
   return inTransaction(() => {
     const placeholder = `PENDING-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -81,8 +106,8 @@ export function insertQuote(input: NewQuote, actor: string): QuoteRow {
       .prepare(
         `INSERT INTO quotes (reference, customer_name, location, service_code, quantity, unit_price_sen,
                              total_sen, requested_date, appointment_date, status, approved_by, approved_at,
-                             crew, risk_status, message, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                             crew, risk_status, line_items, message, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         placeholder,
@@ -99,6 +124,7 @@ export function insertQuote(input: NewQuote, actor: string): QuoteRow {
         input.approval ? now : null,
         input.approval ? JSON.stringify(input.approval.crew.map(crewLabel)) : null,
         input.approval ? "FEASIBLE" : null,
+        JSON.stringify(lines.map((l) => ({ code: l.service.code, quantity: l.quantity, unitPriceSen: l.service.unitPriceSen }))),
         input.message,
         now,
       );
@@ -115,13 +141,13 @@ export function insertQuote(input: NewQuote, actor: string): QuoteRow {
          VALUES (?, 'assignment', ?, ?, ?, ?, ?)`,
       );
       for (const member of input.approval.crew) {
-        reserve.run(member.id, `${input.location} - ${input.service.name} (${input.customerName})`, window.start, window.end, reference, id);
+        reserve.run(member.id, `${input.location} - ${lines.map((l) => l.service.name).join(" + ")} (${input.customerName})`, window.start, window.end, reference, id);
       }
     }
 
     logActivity(
       "price_calculated",
-      `Price calculated for ${reference}: ${input.quantity} x ${formatRm(input.service.unitPriceSen)} = ${formatRm(totalSen)} (${input.service.name}).`,
+      `Price calculated for ${reference}: ${calculation} = ${formatRm(totalSen)} (${lines.map((l) => l.service.name).join(" + ")}).`,
       "System",
       "info",
     );
@@ -130,7 +156,7 @@ export function insertQuote(input: NewQuote, actor: string): QuoteRow {
       logActivity(
         "quotation_approved",
         `${a.approvedBy} approved quotation ${reference} for ${input.customerName} (${input.location}): ` +
-          `${input.quantity} x ${input.service.name}, total ${formatRm(totalSen)}. ` +
+          `${description}, total ${formatRm(totalSen)}. ` +
           `Appointment: ${formatLongDate(a.appointmentDate)}` +
           (a.appointmentDate !== input.requestedDate
             ? ` (customer asked for ${formatLongDate(input.requestedDate)}, which was not feasible).`

@@ -8,10 +8,10 @@ import {
   getListActivityQueryKey,
 } from "@workspace/api-client-react";
 import type { Commitment } from "@workspace/api-client-react";
-import { AlertOctagon, CalendarX2, CheckCircle2, Loader2, Radio, ShieldCheck, UserRoundCheck, XCircle } from "lucide-react";
+import { AlertOctagon, CalendarX2, CheckCircle2, Loader2, Lock, Radio, ShieldCheck, UserRoundCheck, XCircle } from "lucide-react";
 import { ErrorBox } from "@/components/shell";
-
-const MANAGER_NAME = "Faizal"; // demo manager; there is no login in this prototype
+import { LockBadge } from "@/components/lock-badge";
+import { useRole } from "@/lib/role";
 
 const shortDate = (d: string) =>
   new Date(d + "T00:00:00+08:00").toLocaleDateString("en-GB", { timeZone: "Asia/Kuala_Lumpur", weekday: "short", day: "numeric", month: "short" });
@@ -74,12 +74,13 @@ export function RiskAlerts({ recovered, onRecovered }: { recovered: Commitment |
 
 function AtRiskCard({ commitment: c, onRecovered }: { commitment: Commitment; onRecovered: (c: Commitment) => void }) {
   const qc = useQueryClient();
+  const { isManager, name: actorName } = useRole();
   const recover = useRecoverCommitment();
   const plan = c.recovery;
   const x = c.quote;
   const approve = () =>
     recover.mutate(
-      { id: x.id, data: { managerName: MANAGER_NAME, replacementStaffId: plan?.replacement?.id ?? null } },
+      { id: x.id, data: { managerName: actorName, replacementStaffId: plan?.replacement?.id ?? null } },
       {
         onSuccess: (r) => onRecovered(r),
         onSettled: () => {
@@ -142,18 +143,19 @@ function AtRiskCard({ commitment: c, onRecovered }: { commitment: Commitment; on
         </div>
       )}
 
+      {plan?.replacement && !isManager && <div className="mt-4"><LockBadge /></div>}
       {plan?.replacement && (
         <button
-          className="btn w-full mt-4 !min-h-[46px] !text-[13px] !bg-[#a84740] !border-[#a84740] !text-white hover:!bg-[#933b35]"
+          className={`btn w-full ${isManager ? "mt-4" : "mt-2"} !min-h-[46px] !text-[13px] ${isManager ? "!bg-[#a84740] !border-[#a84740] !text-white hover:!bg-[#933b35]" : ""}`}
           onClick={approve}
-          disabled={recover.isPending}
+          disabled={recover.isPending || !isManager}
           data-testid={`button-approve-recovery-${x.id}`}
         >
-          {recover.isPending ? <Loader2 className="spin" /> : <ShieldCheck />}
+          {recover.isPending ? <Loader2 className="spin" /> : isManager ? <ShieldCheck /> : <Lock />}
           Approve Recovery &amp; Update Orbyte Work
         </button>
       )}
-      <p className="text-[11px] text-[#9b6a65] mt-2 mb-0">Manager action as {MANAGER_NAME} (Manager). The replacement is re-checked by the server before the crew changes.</p>
+      <p className="text-[11px] text-[#9b6a65] mt-2 mb-0">Manager-only action. The replacement is re-checked by the server before the crew changes.</p>
       {recover.isError && <div className="mt-3"><ErrorBox error={recover.error} /></div>}
     </section>
   );

@@ -80,6 +80,13 @@ export const AnalyseEnquiryResponse = zod.object({
   "serviceCode": zod.string().nullable(),
   "quantity": zod.number().int().nullable(),
   "specification": zod.string().nullable(),
+  "items": zod.array(zod.object({
+  "serviceCode": zod.string().nullable(),
+  "serviceKind": zod.enum(['install', 'standard_service', 'chemical_wash']),
+  "quantity": zod.number().int().nullable(),
+  "specification": zod.string().nullable(),
+  "issue": zod.string().nullable()
+})),
   "requestedDate": zod.string().nullable(),
   "location": zod.string().nullable(),
   "referenceDate": zod.string(),
@@ -101,12 +108,19 @@ export const ProcessEnquiryBody = zod.object({
 })
 
 export const ProcessEnquiryResponse = zod.object({
-  "status": zod.enum(['needs_information', 'feasible', 'conflict', 'needs_verification']),
+  "status": zod.enum(['needs_clarification', 'feasible', 'conflict', 'needs_verification']),
   "summary": zod.string(),
   "analysis": zod.object({
   "serviceCode": zod.string().nullable(),
   "quantity": zod.number().int().nullable(),
   "specification": zod.string().nullable(),
+  "items": zod.array(zod.object({
+  "serviceCode": zod.string().nullable(),
+  "serviceKind": zod.enum(['install', 'standard_service', 'chemical_wash']),
+  "quantity": zod.number().int().nullable(),
+  "specification": zod.string().nullable(),
+  "issue": zod.string().nullable()
+})),
   "requestedDate": zod.string().nullable(),
   "location": zod.string().nullable(),
   "referenceDate": zod.string(),
@@ -114,6 +128,13 @@ export const ProcessEnquiryResponse = zod.object({
   "clarification": zod.string().nullable()
 }),
   "pricing": zod.object({
+  "lines": zod.array(zod.object({
+  "serviceCode": zod.string(),
+  "serviceName": zod.string(),
+  "quantity": zod.number().int(),
+  "unitPrice": zod.number(),
+  "lineTotal": zod.number()
+})),
   "serviceCode": zod.string(),
   "serviceName": zod.string(),
   "quantity": zod.number().int(),
@@ -211,6 +232,13 @@ export const ListQuotesResponseItem = zod.object({
   "approvedBy": zod.string().nullable(),
   "approvedAt": zod.string().nullable(),
   "crew": zod.array(zod.string()),
+  "lineItems": zod.array(zod.object({
+  "serviceCode": zod.string(),
+  "serviceName": zod.string(),
+  "quantity": zod.number().int(),
+  "unitPrice": zod.number(),
+  "lineTotal": zod.number()
+})),
   "riskStatus": zod.union([zod.literal('FEASIBLE'),zod.literal('AT_RISK'),zod.literal(null)]).nullable(),
   "riskReason": zod.string().nullable(),
   "createdAt": zod.string()
@@ -258,6 +286,13 @@ export const CreateQuoteResponse = zod.object({
   "approvedBy": zod.string().nullable(),
   "approvedAt": zod.string().nullable(),
   "crew": zod.array(zod.string()),
+  "lineItems": zod.array(zod.object({
+  "serviceCode": zod.string(),
+  "serviceName": zod.string(),
+  "quantity": zod.number().int(),
+  "unitPrice": zod.number(),
+  "lineTotal": zod.number()
+})),
   "riskStatus": zod.union([zod.literal('FEASIBLE'),zod.literal('AT_RISK'),zod.literal(null)]).nullable(),
   "riskReason": zod.string().nullable(),
   "createdAt": zod.string()
@@ -278,6 +313,12 @@ export const approveQuotationBodyLocationMax = 240;
 
 export const approveQuotationBodyMessageMax = 2000;
 
+export const approveQuotationBodyExtraItemsItemQuantityMax = 500;
+
+export const approveQuotationBodyExtraItemsMax = 5;
+
+export const approveQuotationBodyApproverNameMax = 80;
+
 
 
 export const ApproveQuotationBody = zod.object({
@@ -287,7 +328,12 @@ export const ApproveQuotationBody = zod.object({
   "requestedDate": zod.string().regex(approveQuotationBodyRequestedDateRegExp),
   "appointmentDate": zod.string().regex(approveQuotationBodyAppointmentDateRegExp),
   "location": zod.string().min(1).max(approveQuotationBodyLocationMax),
-  "message": zod.string().max(approveQuotationBodyMessageMax).nullish()
+  "message": zod.string().max(approveQuotationBodyMessageMax).nullish(),
+  "extraItems": zod.array(zod.object({
+  "serviceCode": zod.string(),
+  "quantity": zod.number().int().min(1).max(approveQuotationBodyExtraItemsItemQuantityMax)
+})).max(approveQuotationBodyExtraItemsMax).nullish(),
+  "approverName": zod.string().max(approveQuotationBodyApproverNameMax).nullish()
 })
 
 export const ApproveQuotationResponse = zod.object({
@@ -307,6 +353,13 @@ export const ApproveQuotationResponse = zod.object({
   "approvedBy": zod.string().nullable(),
   "approvedAt": zod.string().nullable(),
   "crew": zod.array(zod.string()),
+  "lineItems": zod.array(zod.object({
+  "serviceCode": zod.string(),
+  "serviceName": zod.string(),
+  "quantity": zod.number().int(),
+  "unitPrice": zod.number(),
+  "lineTotal": zod.number()
+})),
   "riskStatus": zod.union([zod.literal('FEASIBLE'),zod.literal('AT_RISK'),zod.literal(null)]).nullable(),
   "riskReason": zod.string().nullable(),
   "createdAt": zod.string()
@@ -337,6 +390,13 @@ export const GetQuoteResponse = zod.object({
   "approvedBy": zod.string().nullable(),
   "approvedAt": zod.string().nullable(),
   "crew": zod.array(zod.string()),
+  "lineItems": zod.array(zod.object({
+  "serviceCode": zod.string(),
+  "serviceName": zod.string(),
+  "quantity": zod.number().int(),
+  "unitPrice": zod.number(),
+  "lineTotal": zod.number()
+})),
   "riskStatus": zod.union([zod.literal('FEASIBLE'),zod.literal('AT_RISK'),zod.literal(null)]).nullable(),
   "riskReason": zod.string().nullable(),
   "createdAt": zod.string()
@@ -373,6 +433,13 @@ export const SimulateEmergencyLeaveResponse = zod.object({
   "approvedBy": zod.string().nullable(),
   "approvedAt": zod.string().nullable(),
   "crew": zod.array(zod.string()),
+  "lineItems": zod.array(zod.object({
+  "serviceCode": zod.string(),
+  "serviceName": zod.string(),
+  "quantity": zod.number().int(),
+  "unitPrice": zod.number(),
+  "lineTotal": zod.number()
+})),
   "riskStatus": zod.union([zod.literal('FEASIBLE'),zod.literal('AT_RISK'),zod.literal(null)]).nullable(),
   "riskReason": zod.string().nullable(),
   "createdAt": zod.string()
@@ -430,6 +497,13 @@ export const ListCommitmentsResponseItem = zod.object({
   "approvedBy": zod.string().nullable(),
   "approvedAt": zod.string().nullable(),
   "crew": zod.array(zod.string()),
+  "lineItems": zod.array(zod.object({
+  "serviceCode": zod.string(),
+  "serviceName": zod.string(),
+  "quantity": zod.number().int(),
+  "unitPrice": zod.number(),
+  "lineTotal": zod.number()
+})),
   "riskStatus": zod.union([zod.literal('FEASIBLE'),zod.literal('AT_RISK'),zod.literal(null)]).nullable(),
   "riskReason": zod.string().nullable(),
   "createdAt": zod.string()
@@ -501,6 +575,13 @@ export const RecoverCommitmentResponse = zod.object({
   "approvedBy": zod.string().nullable(),
   "approvedAt": zod.string().nullable(),
   "crew": zod.array(zod.string()),
+  "lineItems": zod.array(zod.object({
+  "serviceCode": zod.string(),
+  "serviceName": zod.string(),
+  "quantity": zod.number().int(),
+  "unitPrice": zod.number(),
+  "lineTotal": zod.number()
+})),
   "riskStatus": zod.union([zod.literal('FEASIBLE'),zod.literal('AT_RISK'),zod.literal(null)]).nullable(),
   "riskReason": zod.string().nullable(),
   "createdAt": zod.string()

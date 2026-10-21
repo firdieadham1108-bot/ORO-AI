@@ -32,8 +32,10 @@ Quotation and staffing-availability workspace for the fictional CoolAir Services
 - Demo crew rule: installation needs 2 technicians incl. 1 senior, 8-hour window (09:00-17:00). Other services need 1 technician. Working days are Mon-Fri, so weekends are never suggested. These are fictional business rules.
 - When several technicians are free, the scheduler picks by `staff.dispatch_order` (Bala, Mei, Chong, Ali), so the Monday crew is Bala + Mei and Chong is the first stand-in for Bala, as in the brief.
 - Quote numbers are `ORO-<1022+id>`, so the first quote after a reset is ORO-1023.
-- The manager check on recovery is a name lookup (Faizal, role Business Manager), not real login.
+- The manager check on approval and recovery is a name lookup (Faizal, role Business Manager), not real login. The header role switch (Sales Staff (Mei) / Manager (Faizal), kept in localStorage) sends that name; the server answers 403 for non-managers.
+- Parsing understands English, Bahasa Melayu and Chinese keywords. A message with several services becomes several line items; a quote's total is the sum of its lines, and the installation line (if any) sets the crew rule.
+- Only 1.0HP and 1.5HP installation are on the price list. Any other size (e.g. 2.0HP) gives `needs_clarification` instead of a made-up price.
 
 ## Scope
 
-Phases 1-3, manager approval (reserves the crew), and Sprint 4 (Optional C+D): simulated eLeave event, at-risk detection and manager-approved recovery. One workspace page. Not built: voice-to-quote, PWA, real auth.
+Phases 1-3, manager approval (reserves the crew), Sprint 4 (Optional C+D): simulated eLeave event, at-risk detection and manager-approved recovery, and Sprint 5: Reset Demo State button, demo role switch with lock badges, 4 preset scenario chips, printable quotation modal. One workspace page. Not built: voice-to-quote, PWA, real auth.

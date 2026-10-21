@@ -5,8 +5,10 @@
  * ORO AI demo API (Phase 1 and 2) - staffing records, price list, enquiry analysis and quotations. All data is synthetic.
  * OpenAPI spec version: 0.1.0
  */
+import type { PricingLine } from './pricingLine';
 
 export interface Pricing {
+  lines: PricingLine[];
   serviceCode: string;
   serviceName: string;
   quantity: number;

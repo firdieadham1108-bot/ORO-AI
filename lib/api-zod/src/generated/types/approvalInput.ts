@@ -5,6 +5,7 @@
  * ORO AI demo API (Phase 1 and 2) - staffing records, price list, enquiry analysis and quotations. All data is synthetic.
  * OpenAPI spec version: 0.1.0
  */
+import type { ApprovalInputExtraItemsItem } from './approvalInputExtraItemsItem';
 
 export interface ApprovalInput {
   /**
@@ -32,4 +33,14 @@ export interface ApprovalInput {
      * @nullable
      */
   message?: string | null;
+  /**
+     * @maxItems 5
+     * @nullable
+     */
+  extraItems?: ApprovalInputExtraItemsItem[] | null;
+  /**
+     * @maxLength 80
+     * @nullable
+     */
+  approverName?: string | null;
 }

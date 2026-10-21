@@ -4,6 +4,7 @@
 //   Test 4 - Available alternative
 //   Test 9 - Leave-change detection (optional C)
 //   Test 10 - Recovery (optional D), incl. rejecting an already-booked replacement
+//   Sprint 5 - Preset scenarios 2-4 (BM, Chinese, missing info) and the demo role lock
 //
 // Run (API Server workflow must be running):  pnpm --filter @workspace/api-server run test:acceptance
 // NOTE: this resets the demo data first so the seeded scenario is the starting point.
@@ -206,4 +207,61 @@ test("Test 10b - Recovery rejects a replacement who already has an overlapping j
   assert.ok(chong, "Chong must be rejected");
   assert.match(chong.reason, /Already booked/);
   assert.equal(plan.replacement.name, "Ali", "next safe senior is recommended instead");
+});
+
+// ---------- Sprint 5: preset scenarios and the demo role switch ----------
+
+test("Scenario 2 - Bahasa Melayu multi-service: 2 x 1.0HP install + 3 x servicing = RM560, Monday feasible", async () => {
+  await post("/demo/reset", {});
+  const r = await post("/enquiry", {
+    message: "Salam boss, nak pasang 2 biji aircond 1.0hp dan servis biasa 3 biji dekat Taman Connaught Isnin 26 Oct boleh?",
+  });
+  assert.equal(r.status, "feasible");
+  assert.deepEqual(
+    r.pricing.lines.map((l) => [l.serviceCode, l.quantity, l.lineTotal]),
+    [["install_1_0hp", 2, 320], ["standard_service", 3, 240]],
+  );
+  assert.equal(r.pricing.totalFormatted, "RM560.00");
+  assert.equal(r.analysis.location, "Taman Connaught");
+  assert.equal(r.analysis.requestedDate, "2026-10-26");
+  assert.deepEqual(r.requestedSchedule.crew.map((c) => c.name), ["Bala", "Mei"], "installation crew rule applies");
+});
+
+test("Scenario 3 - Chinese enquiry: 2.0HP is flagged as unsupported, no price invented", async () => {
+  const r = await post("/enquiry", { message: "老板，10月26号星期一我们在蕉赖的店要装一台2.0hp冷气，另外一台旧的要做chemical wash，多少钱？" });
+  assert.equal(r.status, "needs_clarification");
+  assert.equal(r.analysis.requestedDate, "2026-10-26");
+  assert.equal(r.analysis.location, "Cheras");
+  assert.deepEqual(r.analysis.items.map((i) => [i.serviceKind, i.quantity]), [["install", 1], ["chemical_wash", 1]]);
+  assert.match(r.analysis.items[0].issue, /2\.0HP is not on the price list/);
+  assert.equal(r.pricing, undefined);
+});
+
+test("Scenario 4 - Missing info: NEEDS_CLARIFICATION asks for the HP size", async () => {
+  const r = await post("/enquiry", { message: "Hi CoolAir, can quote me price to install 4 aircons at my apartment in Cheras next Wednesday?" });
+  assert.equal(r.status, "needs_clarification");
+  assert.equal(r.analysis.quantity, 4);
+  assert.equal(r.analysis.location, "Cheras");
+  assert.ok(r.analysis.missing.some((m) => /HP/.test(m)), "missing list names the HP size");
+  assert.equal(r.pricing, undefined);
+  assert.equal(r.requestedSchedule, undefined);
+});
+
+test("Role lock - Sales staff (Mei) cannot approve a quotation or a recovery; manager (Faizal) can", async () => {
+  await post("/demo/reset", {});
+  const denied = await call("POST", "/approvals", { ...MONDAY_JOB, approverName: "Mei" });
+  assert.equal(denied.status, 403);
+  assert.match(denied.body.error, /Requires Manager \(Faizal\)/);
+
+  const approved = await call("POST", "/approvals", {
+    ...MONDAY_JOB, approverName: "Faizal", extraItems: [{ serviceCode: "standard_service", quantity: 3 }],
+  });
+  assert.equal(approved.status, 201);
+  assert.equal(approved.body.reference, "ORO-1023");
+  assert.equal(approved.body.totalPrice, 1380, "6 x RM190 + 3 x RM80");
+  assert.equal(approved.body.lineItems.length, 2);
+
+  await call("POST", "/orbyte-sim/emergency-leave");
+  const salesRecover = await call("POST", `/commitments/${approved.body.id}/recover`, { managerName: "Mei" });
+  assert.equal(salesRecover.status, 403);
 });

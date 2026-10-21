@@ -1,0 +1,23 @@
+Read MASTER_BRIEF.md (Part 6, Part 9 Feature 6 & 7, and Part 14). We are now implementing Sprint 5: Demo Hygiene, Role-Based Access Simulation, and Printable Quotation View.
+
+Please add the following 4 enhancements without altering our core scheduling math:
+1. 1-Click "Reset Demo Data" Button (`POST /api/demo/reset`):
+   - Add a button in the top navigation bar: `[Reset Demo State]`.
+   - Clicking it cleanly resets the SQLite tables back to the initial seeded state for CoolAir Services Sdn Bhd (Ali on leave Fri 23 Oct; Bala, Mei, Chong busy Fri 23 Oct and free Mon 26 Oct; zero confirmed quotes) so we can re-run the demo cleanly at any time.
+
+2. Simulated Orbyte Role Switcher (RBAC — Must-Have #4):
+   - In the top header, add a visible role toggle: `Sales Staff (Mei)` vs. `Manager (Faizal)`.
+   - When switched to `Sales Staff (Mei)`, the user can analyse enquiries and view schedule checks, but the `[Approve Quotation & Confirm Slot]` and `[Approve Recovery]` buttons are disabled with a lock badge: `"Requires Manager (Faizal) Approval"`.
+   - When switched to `Manager (Faizal)`, the approval buttons are unlocked and active.
+
+3. Quick-Fill Scenario Buttons above the Enquiry Input Box:
+   - Add 4 small preset chips above the text box so judges can test different scenarios in one click:
+     * `[Scenario 1: Flagship Friday Conflict (EN)]` -> `"Boss, can you install 6 units of 1.5HP aircon at our Cheras office this Friday? Send quote please."`
+     * `[Scenario 2: Bahasa Melayu Multi-Service]` -> `"Salam boss, nak pasang 2 biji aircond 1.0hp dan servis biasa 3 biji dekat Taman Connaught Isnin 26 Oct boleh?"`
+     * `[Scenario 3: Chinese Enquiry]` -> `"老板，10月26号星期一我们在蕉赖的店要装一台2.0hp冷气，另外一台旧的要做chemical wash，多少钱？"`
+     * `[Scenario 4: Missing Info Edge Case]` -> `"Hi CoolAir, can quote me price to install 4 aircons at my apartment in Cheras next Wednesday?"` (Must trigger `NEEDS_CLARIFICATION` and highlight the missing HP specification in amber).
+
+4. Clean Printable Quotation Modal/View:
+   - Once a quotation is generated or approved, allow clicking `[View Printable Quotation]` to display a clean, print-ready document header (`CoolAir Services Sdn Bhd — Quotation #ORO-1023`, itemized table, unit price, total RM, promised date, assigned crew, approval status, and a `[Print / Save PDF]` button using `window.print()`).
+
+Verify all 4 features work and explain what to click to test each one.

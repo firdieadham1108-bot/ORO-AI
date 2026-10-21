@@ -5,6 +5,7 @@
  * ORO AI demo API (Phase 1 and 2) - staffing records, price list, enquiry analysis and quotations. All data is synthetic.
  * OpenAPI spec version: 0.1.0
  */
+import type { ParsedItem } from './parsedItem';
 
 export interface EnquiryAnalysis {
   /** @nullable */
@@ -13,6 +14,7 @@ export interface EnquiryAnalysis {
   quantity: number | null;
   /** @nullable */
   specification: string | null;
+  items: ParsedItem[];
   /** @nullable */
   requestedDate: string | null;
   /** @nullable */
