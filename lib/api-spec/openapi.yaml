@@ -3,20 +3,19 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: ORO AI demo API (Phase 1 and 2) - staffing records, price list, enquiry analysis and quotations. All data is synthetic.
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
-    description: Health operations
+  - name: oro
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +23,156 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /staff/availability:
+    get:
+      operationId: getStaffAvailability
+      tags: [oro]
+      summary: Staff availability for one date, calculated from capacity blocks
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: "^\\d{4}-\\d{2}-\\d{2}$"
+      responses:
+        "200":
+          description: Availability of every staff member for the date
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffAvailabilityDay"
+        "400":
+          description: Invalid date
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /services:
+    get:
+      operationId: listServices
+      tags: [oro]
+      summary: Approved service price list
+      responses:
+        "200":
+          description: Price list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Service"
+  /enquiries/analyse:
+    post:
+      operationId: analyseEnquiry
+      tags: [oro]
+      summary: Extract job details from a customer message
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EnquiryInput"
+      responses:
+        "200":
+          description: Extracted details and anything still missing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnquiryAnalysis"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /quotes:
+    get:
+      operationId: listQuotes
+      tags: [oro]
+      summary: List quotations, newest first
+      responses:
+        "200":
+          description: Quotations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Quote"
+    post:
+      operationId: createQuote
+      tags: [oro]
+      summary: Create a draft quotation with a server-calculated price
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuoteInput"
+      responses:
+        "201":
+          description: Draft quotation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quote"
+        "400":
+          description: Invalid or incomplete request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /quotes/{id}:
+    get:
+      operationId: getQuote
+      tags: [oro]
+      summary: Get one quotation for preview
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Quotation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quote"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /activity:
+    get:
+      operationId: listActivity
+      tags: [oro]
+      summary: Activity log, newest first
+      responses:
+        "200":
+          description: Activity entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityEntry"
+  /demo/reset:
+    post:
+      operationId: resetDemo
+      tags: [oro]
+      summary: Reset the synthetic demo data
+      responses:
+        "200":
+          description: Demo data restored
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResetResult"
 components:
   schemas:
     HealthStatus:
@@ -31,6 +180,122 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
-
+      required: [status]
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+    Service:
+      type: object
+      properties:
+        code: { type: string }
+        name: { type: string }
+        specification: { type: ["string", "null"] }
+        unitPrice: { type: number }
+        unit: { type: string }
+      required: [code, name, specification, unitPrice, unit]
+    CapacityBlock:
+      type: object
+      properties:
+        id: { type: integer }
+        kind: { type: string, enum: [leave, assignment] }
+        title: { type: string }
+        startAt: { type: string }
+        endAt: { type: string }
+        reference: { type: string }
+      required: [id, kind, title, startAt, endAt, reference]
+    StaffAvailability:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        role: { type: string }
+        isSenior: { type: boolean }
+        canInstall: { type: boolean }
+        status:
+          type: string
+          enum: [available, on_leave, assigned, not_a_technician]
+        blocks:
+          type: array
+          items:
+            $ref: "#/components/schemas/CapacityBlock"
+      required: [id, name, role, isSenior, canInstall, status, blocks]
+    StaffAvailabilityDay:
+      type: object
+      properties:
+        date: { type: string }
+        weekday: { type: string }
+        windowStart: { type: string }
+        windowEnd: { type: string }
+        staff:
+          type: array
+          items:
+            $ref: "#/components/schemas/StaffAvailability"
+        availableInstallers: { type: integer }
+        availableSeniorInstallers: { type: integer }
+      required: [date, weekday, windowStart, windowEnd, staff, availableInstallers, availableSeniorInstallers]
+    EnquiryInput:
+      type: object
+      properties:
+        message: { type: string, minLength: 1, maxLength: 2000 }
+      required: [message]
+    EnquiryAnalysis:
+      type: object
+      properties:
+        serviceCode: { type: ["string", "null"] }
+        quantity: { type: ["integer", "null"] }
+        specification: { type: ["string", "null"] }
+        requestedDate: { type: ["string", "null"] }
+        location: { type: ["string", "null"] }
+        referenceDate: { type: string }
+        missing:
+          type: array
+          items: { type: string }
+        clarification: { type: ["string", "null"] }
+      required: [serviceCode, quantity, specification, requestedDate, location, referenceDate, missing, clarification]
+    QuoteInput:
+      type: object
+      properties:
+        customerName: { type: string, minLength: 1, maxLength: 160 }
+        serviceCode: { type: string }
+        quantity: { type: integer, minimum: 1, maximum: 500 }
+        requestedDate: { type: string, pattern: "^\\d{4}-\\d{2}-\\d{2}$" }
+        location: { type: string, minLength: 1, maxLength: 240 }
+        message: { type: ["string", "null"], maxLength: 2000 }
+      required: [customerName, serviceCode, quantity, requestedDate, location]
+    Quote:
+      type: object
+      properties:
+        id: { type: integer }
+        reference: { type: string }
+        companyName: { type: string }
+        customerName: { type: string }
+        location: { type: string }
+        serviceCode: { type: string }
+        serviceName: { type: string }
+        quantity: { type: integer }
+        unitPrice: { type: number }
+        totalPrice: { type: number }
+        requestedDate: { type: string }
+        status: { type: string, enum: [draft] }
+        createdAt: { type: string }
+      required: [id, reference, companyName, customerName, location, serviceCode, serviceName, quantity, unitPrice, totalPrice, requestedDate, status, createdAt]
+    ActivityEntry:
+      type: object
+      properties:
+        id: { type: integer }
+        action: { type: string }
+        description: { type: string }
+        actor: { type: string }
+        severity: { type: string, enum: [info, success, warning] }
+        createdAt: { type: string }
+      required: [id, action, description, actor, severity, createdAt]
+    ResetResult:
+      type: object
+      properties:
+        message: { type: string }
+        staffCount: { type: integer }
+        capacityBlockCount: { type: integer }
+      required: [message, staffCount, capacityBlockCount]

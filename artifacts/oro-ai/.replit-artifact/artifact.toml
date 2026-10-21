@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "ORO AI"
+description = "A practical quotation and appointment-checking tool for small service businesses. ORO AI structures incoming job enquiries, calculates quotes from an approved price list, checks technician availability against synthetic records, recommends feasible dates, and lets managers approve and log commitments."
+version = "1.0.0"
+id = "artifacts/oro-ai"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18804
+
+[services.development]
+run = "pnpm --filter @workspace/oro-ai run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/oro-ai", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/oro-ai/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18804"
+BASE_PATH = "/"
