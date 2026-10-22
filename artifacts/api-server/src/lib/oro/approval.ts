@@ -1,12 +1,12 @@
 // Manager approval: re-check the chosen date against the latest records, then save an approved quotation.
-import { db, inTransaction, logActivity } from "./db";
+import { inTransaction, logActivity } from "./db";
+import { MockOrbyteApprovalAdapter } from "./orbyte-adapters";
 import { formatLongDate, isValidDateString } from "./dates";
 import { insertQuote, type QuoteRow } from "./quotes";
 import { checkSchedule } from "./scheduling";
 import { findService, type ServiceItem } from "./services";
 
 export const MANAGER = "Faizal (Manager)";
-const MANAGER_ROLE = "Business Manager";
 
 export interface ApprovalRequest {
   customerName: string;
@@ -32,8 +32,7 @@ export function approveQuotation(req: ApprovalRequest): ApprovalOutcome {
     return { ok: false, status: 400, error: `Unknown service "${req.serviceCode}". Choose a service from the price list.` };
   }
   if (req.approverName != null) {
-    const person = db.prepare("SELECT role FROM staff WHERE name = ?").get(req.approverName.trim()) as { role: string } | undefined;
-    if (person?.role !== MANAGER_ROLE) {
+    if (!MockOrbyteApprovalAdapter.canApprove(req.approverName)) {
       logActivity("approval_denied", `${req.approverName} tried to approve a quotation but does not have the manager role.`, req.approverName, "warning");
       return { ok: false, status: 403, error: "Requires Manager (Faizal) approval. Switch the demo role to Manager to approve." };
     }

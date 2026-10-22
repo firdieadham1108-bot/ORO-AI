@@ -4,13 +4,13 @@
 // flagged AT_RISK, and a replacement is recommended. Changing the crew needs the manager.
 import { db, inTransaction, logActivity } from "./db";
 import { getStaffAvailability } from "./availability";
+import { MockOrbyteApprovalAdapter, MockOrbyteLeaveAdapter, MockOrbytePeopleAdapter, MockOrbyteWorkAdapter } from "./orbyte-adapters";
 import { addDays, formatLongDate, overlaps, workingWindow } from "./dates";
 import { crewLabel, formatRm, toQuote, type QuoteRow } from "./quotes";
 import { crewRequirementFor, findAlternatives, type CrewMember } from "./scheduling";
 
 const ELEAVE_ACTOR = "Orbyte eLeave (simulated)";
 const MONITOR_ACTOR = "ORO AI risk monitor";
-const MANAGER_ROLE = "Business Manager";
 
 /** The scripted demo event: Bala's emergency leave for Monday 26 Oct 2026 is approved in eLeave. */
 export const DEMO_LEAVE_EVENT = {
@@ -20,20 +20,6 @@ export const DEMO_LEAVE_EVENT = {
   title: "Approved emergency leave",
 } as const;
 
-interface StaffRow {
-  id: number;
-  name: string;
-  role: string;
-  is_senior: number;
-  can_install: number;
-}
-interface ReservationRow {
-  id: number;
-  staff_id: number;
-  start_at: string;
-  end_at: string;
-}
-
 const toMember = (s: { id: number; name: string; role: string; isSenior: boolean }): CrewMember => ({
   id: s.id,
   name: s.name,
@@ -41,10 +27,8 @@ const toMember = (s: { id: number; name: string; role: string; isSenior: boolean
   isSenior: s.isSenior,
 });
 
-function reservationsFor(quoteId: number): ReservationRow[] {
-  return db
-    .prepare("SELECT id, staff_id, start_at, end_at FROM capacity_blocks WHERE quote_id = ? AND kind = 'assignment'")
-    .all(quoteId) as unknown as ReservationRow[];
+function reservationsFor(quoteId: number) {
+  return MockOrbyteWorkAdapter.assignmentsForQuote(quoteId);
 }
 
 function getQuoteRow(id: number): QuoteRow | undefined {
@@ -77,7 +61,7 @@ export function assessCommitment(quote: QuoteRow): RecoveryPlan | null {
   const date = quote.appointment_date;
   const day = getStaffAvailability(date);
   const reservations = reservationsFor(quote.id);
-  const crewIds = new Set(reservations.map((r) => r.staff_id));
+  const crewIds = new Set(reservations.map((r) => r.staffId));
   const crew = day.staff.filter((s) => crewIds.has(s.id));
 
   const missing = crew.find((s) => s.status === "on_leave");
@@ -181,19 +165,17 @@ export function listCommitments() {
 export function simulateEmergencyLeave() {
   const ev = DEMO_LEAVE_EVENT;
   return inTransaction(() => {
-    const person = db.prepare("SELECT * FROM staff WHERE name = ?").get(ev.staffName) as unknown as StaffRow | undefined;
+    const person = MockOrbytePeopleAdapter.findByName(ev.staffName);
     if (!person) throw new Error(`Staff member ${ev.staffName} is missing from the demo data.`);
     const leaveStart = `${ev.date}T00:00:00+08:00`;
     const leaveEnd = `${addDays(ev.date, 1)}T00:00:00+08:00`;
     const longDate = formatLongDate(ev.date);
 
-    const existing = db
-      .prepare("SELECT id FROM capacity_blocks WHERE kind = 'leave' AND staff_id = ? AND reference = ?")
-      .get(person.id, ev.reference);
+    const existing = MockOrbyteLeaveAdapter.findLeave(person.id, ev.reference);
     if (!existing) {
-      db.prepare(
-        "INSERT INTO capacity_blocks (staff_id, kind, title, start_at, end_at, reference) VALUES (?, 'leave', ?, ?, ?, ?)",
-      ).run(person.id, ev.title, leaveStart, leaveEnd, ev.reference);
+      MockOrbyteLeaveAdapter.recordApprovedLeave({
+        staffId: person.id, title: ev.title, startAt: leaveStart, endAt: leaveEnd, reference: ev.reference,
+      });
       logActivity(
         "leave_approved",
         `Orbyte eLeave approved emergency leave for ${person.name} on ${longDate} (eLeave #${ev.reference}). ` +
@@ -203,16 +185,16 @@ export function simulateEmergencyLeave() {
       );
     }
 
-    // Approved commitments with a reservation for this person that overlaps the leave.
-    const dependent = db
-      .prepare(
-        `SELECT DISTINCT q.* FROM quotes q JOIN capacity_blocks b ON b.quote_id = q.id
-         WHERE q.status = 'approved' AND b.kind = 'assignment' AND b.staff_id = ?`,
-      )
-      .all(person.id) as unknown as QuoteRow[];
-    const affected = dependent.filter((q) =>
-      reservationsFor(q.id).some((r) => r.staff_id === person.id && overlaps(leaveStart, leaveEnd, r.start_at, r.end_at)),
+    // Approved commitments whose Orbyte Work assignment for this person overlaps the leave.
+    const quoteIds = new Set(
+      MockOrbyteWorkAdapter.listAssignments()
+        .filter((r) => r.staffId === person.id && r.quoteId !== null && overlaps(leaveStart, leaveEnd, r.startAt, r.endAt))
+        .map((r) => r.quoteId as number),
     );
+    const affected = [...quoteIds]
+      .sort((a, b) => a - b)
+      .map((id) => getQuoteRow(id))
+      .filter((q): q is QuoteRow => q?.status === "approved");
 
     const newlyFlagged: string[] = [];
     for (const q of affected) {
@@ -257,8 +239,8 @@ export type RecoveryOutcome =
 /** Manager approves the recommended swap. Everything is re-validated inside one transaction. */
 export function recoverCommitment(quoteId: number, input: { managerName: string; replacementStaffId?: number | null }): RecoveryOutcome {
   return inTransaction((): RecoveryOutcome => {
-    const manager = db.prepare("SELECT * FROM staff WHERE name = ?").get(input.managerName.trim()) as unknown as StaffRow | undefined;
-    if (!manager || manager.role !== MANAGER_ROLE) {
+    const manager = MockOrbyteApprovalAdapter.canApprove(input.managerName);
+    if (!manager) {
       return { ok: false, status: 403, error: "Only the business manager (Faizal) can approve a crew change." };
     }
     const quote = getQuoteRow(quoteId);
@@ -283,11 +265,7 @@ export function recoverCommitment(quoteId: number, input: { managerName: string;
     }
 
     const managerLabel = `${manager.name} (Manager)`;
-    db.prepare("UPDATE capacity_blocks SET staff_id = ? WHERE quote_id = ? AND kind = 'assignment' AND staff_id = ?").run(
-      chosen.id,
-      quote.id,
-      plan.unavailableStaffId,
-    );
+    MockOrbyteWorkAdapter.reassign(quote.id, plan.unavailableStaffId, chosen.id);
     // Keep the crew order; swap only the person who dropped out.
     const oldLabels = quote.crew ? (JSON.parse(quote.crew) as string[]) : [];
     const crewLabels = oldLabels.map((l) => (l.replace(/ \(senior\)$/, "") === plan.unavailableStaffName ? crewLabel(chosen) : l));
@@ -313,6 +291,5 @@ export function recoverCommitment(quoteId: number, input: { managerName: string;
 
 function staffName(id: number | null | undefined): string | undefined {
   if (id == null) return undefined;
-  const row = db.prepare("SELECT name FROM staff WHERE id = ?").get(id) as { name: string } | undefined;
-  return row?.name;
+  return MockOrbytePeopleAdapter.findById(id)?.name;
 }

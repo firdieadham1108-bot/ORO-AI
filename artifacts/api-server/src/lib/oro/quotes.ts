@@ -1,5 +1,6 @@
 // Quotation storage helpers (quotes table). Prices are recalculated here from the price list.
 import { db, inTransaction, logActivity } from "./db";
+import { MockOrbyteWorkAdapter } from "./orbyte-adapters";
 import { formatLongDate, nowMyt, workingWindow } from "./dates";
 import type { CrewMember } from "./scheduling";
 import { calculateTotalSen, COMPANY_NAME, findService, senToRm, type ServiceItem } from "./services";
@@ -136,12 +137,9 @@ export function insertQuote(input: NewQuote, actor: string): QuoteRow {
     // so later availability checks and the risk monitor can see who this job depends on.
     if (input.approval) {
       const window = workingWindow(input.approval.appointmentDate);
-      const reserve = db.prepare(
-        `INSERT INTO capacity_blocks (staff_id, kind, title, start_at, end_at, reference, quote_id)
-         VALUES (?, 'assignment', ?, ?, ?, ?, ?)`,
-      );
+      const title = `${input.location} - ${lines.map((l) => l.service.name).join(" + ")} (${input.customerName})`;
       for (const member of input.approval.crew) {
-        reserve.run(member.id, `${input.location} - ${lines.map((l) => l.service.name).join(" + ")} (${input.customerName})`, window.start, window.end, reference, id);
+        MockOrbyteWorkAdapter.createAssignment({ staffId: member.id, title, startAt: window.start, endAt: window.end, reference, quoteId: id });
       }
     }
 

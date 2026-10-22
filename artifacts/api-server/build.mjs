@@ -11,7 +11,8 @@ globalThis.require = createRequire(import.meta.url);
 const artifactDir = path.dirname(fileURLToPath(import.meta.url));
 
 async function buildAll() {
-  const distDir = path.resolve(artifactDir, "dist");
+  // BUILD_OUT_DIR lets the test runner build a private copy without touching the running server's dist/.
+  const distDir = path.resolve(artifactDir, process.env.BUILD_OUT_DIR ?? "dist");
   await rm(distDir, { recursive: true, force: true });
 
   await esbuild({

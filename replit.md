@@ -6,6 +6,7 @@ Quotation and staffing-availability workspace for the fictional CoolAir Services
 
 - API server: workflow `artifacts/api-server: API Server`; web app: `artifacts/oro-ai: web`
 - `pnpm run typecheck` — full typecheck
+- `npm test` — 10 required tests against an isolated test server + temp database
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate hooks and Zod schemas after editing `lib/api-spec/openapi.yaml`
 - Quick check: `curl localhost:80/api/staff/availability?date=2026-10-23`
 
@@ -17,7 +18,9 @@ Quotation and staffing-availability workspace for the fictional CoolAir Services
 ## Where things live
 
 - `artifacts/api-server/src/lib/oro/` — `db.ts` (4 tables: staff, capacity_blocks, quotes, activity_log), `seed.ts` (synthetic data), `availability.ts`, `parser.ts` (rule-based enquiry extraction), `services.ts` (price list), `scheduling.ts` (crew rules, feasibility, alternative dates), `enquiry.ts` (one-call workflow behind `POST /api/enquiry`)
-- `artifacts/api-server/tests/acceptance.test.mjs` — acceptance tests (Tests 1, 3, 4, 9, 10); run `pnpm --filter @workspace/api-server run test:acceptance` (resets demo data first)
+- `artifacts/api-server/tests/` — `npm test` (root) runs `runTests.mjs`: builds a private copy into `.test-build/`, starts it on a free port with a temp SQLite DB (`ORO_DB_PATH`), runs the 10 required brief tests in `required.test.mjs`. Never touches the dev demo data.
+- `artifacts/api-server/src/lib/oro/orbyte-adapters.ts` — the 4 Mock Orbyte adapters (People, Leave, Work, Approval); core logic reads/writes Orbyte-type data only through them. Documented in `orbyte-api-assumptions.md`.
+- `README.md`, `LICENSE` (Apache 2.0, unmodified official text), `orbyte-api-assumptions.md` at the root
 - `artifacts/api-server/src/routes/oro.ts` — API routes; contract in `lib/api-spec/openapi.yaml`
 - `artifacts/oro-ai/src/pages/workspace.tsx` — the single-page workspace: enquiry input (left), approval card with Option A/B and quotation preview (right)
 - `artifacts/api-server/src/lib/oro/approval.ts` + `quotes.ts` — `POST /api/approvals` re-checks the chosen date, saves an approved quote, reserves the crew (assignment rows in capacity_blocks with `quote_id`) and logs it

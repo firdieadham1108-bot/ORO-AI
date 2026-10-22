@@ -50,3 +50,9 @@ Thumbs.db
 
 # ORO AI local SQLite database
 artifacts/api-server/data/
+artifacts/api-server/.test-build/
+
+# Secrets: never commit environment files or API keys
+.env
+.env.*
+!.env.example
