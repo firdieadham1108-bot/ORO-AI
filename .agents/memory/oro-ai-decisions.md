@@ -17,7 +17,7 @@ description: Decisions for the ORO AI hackathon prototype (formerly QuoteGuard) 
   **Why:** the user identified the uploaded penguin artwork as “our logo” and asked to add it, not redesign the app.
   **How to apply:** use the supplied artwork for brand imagery and installable icons; do not generate a replacement.
 - Design-system extraction must not change any existing ORO AI screen until the user explicitly agrees to apply it.
-  **Why:** the user requested extraction first and a separate application decision once it is ready.
+  **Why:** the user requested extraction first and a separate application decision once it is ready; their pilot approval explicitly authorised finishing extraction without changing screens.
   **How to apply:** present the extracted library for review; approval to continue extraction is not approval to migrate screens or canvas mockups.
 - The user watches the preview live while I work and presses Reset Demo State themselves (a `POST /api/demo/reset` in the API log with no agent action = the user). Do not treat an unexpected reset as a bug, and expect my curl test records to vanish mid-session.
 - Crew pick order comes from `staff.dispatch_order` (Bala 1, Mei 2, Chong 3, Ali 4) so the Monday crew is Bala + Mei and the recovery picks Chong.

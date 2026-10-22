@@ -5,6 +5,10 @@ Read `artifacts/oro-design-system/docs/AGENTS.md` and
 when a web app, including a fresh scaffold, already has local theme or component
 copies.
 
+Do not start this migration without the user's separate approval. The full
+source component catalog is now available, but extraction itself changes no
+application imports or screens.
+
 ## Replace the local theme
 
 Replace the app's Tailwind/theme setup with the package import from the web
@@ -24,6 +28,15 @@ Rewrite every local import for a module this package provides:
   `@workspace/oro-design-system/components/ui/<name>`
 - `@/lib/utils` (`cn`) → `@workspace/oro-design-system/lib/utils`
 - `@/hooks/use-toast` → `@workspace/oro-design-system/hooks/use-toast`
+- `@/hooks/use-mobile` → `@workspace/oro-design-system/hooks/use-mobile`
+- `kit.tsx` status/header/empty/loading exports → their matching family modules
+  under `components/ui/`. Keep the product-specific `initials` utility locally.
+
+The app's custom CSS uses aliases such as `--navy`, `--gold`, `--bg` and
+`--ok`. Map these aliases to this package's standard/semantic variables rather
+than leaving a competing root token block. Preserve layout and product-specific
+CSS and behavior. Do not remove risk, voice, wallet, quotation-document, roles,
+timers or pricing logic; these are product compositions, not library duplicates.
 
 Judge component ownership by the imported module, not by the file doing the
 import. App-specific components may remain local, but they must import shared

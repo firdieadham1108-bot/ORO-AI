@@ -1,10 +1,13 @@
 # popover
 
 Source: artifacts/oro-ai/src/components/ui/popover.tsx
-Provenance: local ORO AI application, extracted 2026-10-22; Apache-2.0.
-Public exports: Source exports, preserve when porting.
-Build chunk: 8. Status: pending.
+Provenance: ORO AI local component library; Apache-2.0.
+Status: implemented. Chunk: 7.
+Public exports: Popover, PopoverTrigger, PopoverContent, PopoverAnchor.
+Dependencies: react, @radix-ui/react-popover, @/lib/utils.
 
-Source-defined UI family, not inferred from screenshots. Before implementation read the full source, imports, peer component dependencies, original styling and representative app consumers. Preserve original public APIs and headless behavior libraries. No replacement is shipped in this pilot. Dependencies must be in the same or earlier chunk; move a dependency earlier if discovered before building. Scaffold files are intentionally absent until this family is ported.
+Full implementation evidence: ../source-ui/popover.tsx. Port reuses source verbatim, changing only package-safe imports. No styling or logic changes. Variants, keyboard/focus behavior, refs, context and underlying headless library remain original.
 
-Validation: compare source exports/defaults/variants with port; render light and dark; check keyboard/focus/disabled behavior where applicable. Dark semantic styles are derived, not a claim of existing screen fidelity.
+Shared dependencies are ported before consumers in the dependency-sorted chunk plan. Toast + Toaster share one family and the original use-toast store. Sonner requires next-themes provider; sidebar uses original use-mobile hook.
+
+Validation contract: normalized port must exactly equal retained source; typecheck; story registered; variants/states represented; overlays start closed; bounded layout stories.

@@ -2,11 +2,11 @@
 
 ## Approval boundary
 
-This is a source-backed five-family pilot extracted from ORO AI. The remaining
-families are catalogued, not implemented. Do not apply this package to the app,
+This is the completed source-backed extraction of ORO AI: 58 component families,
+59 source modules and 58 preview stories. The five-family pilot was approved and
+the rest ported in dependency order. Do not apply this package to the app,
 change existing screens, remove local components, or rebuild canvas mockups until
-the user explicitly approves. Pilot approval is required before later chunks;
-application approval is a separate decision after the required library is ready.
+the user separately approves application. Extraction approval is not migration approval.
 
 ## Extraction references and runtime
 
@@ -14,7 +14,10 @@ application approval is a separate decision after the required library is ready.
 - `docs/references/components/*.md` — read the relevant build contract before editing a family.
 - `docs/references/source-kit.tsx`, `source-button.tsx`, `source-theme.css` — retained implementation evidence.
 - `docs/references/logos/oro-logo.png` — genuine user-supplied logo.
-- `src/components/ui/` — only five implemented source families; scaffold components were removed.
+- `src/components/ui/` — all source families, ported without behavior changes; no unrelated scaffold components.
+- `docs/references/source-ui/` — full retained implementation evidence for the remaining UI families and hooks.
+- `src/hooks/use-toast.tsx` — the original toast store, shared with the exported Toaster.
+- `src/hooks/use-mobile.tsx` — the original mobile breakpoint hook.
 - `src/oro.css` — source-derived component styling, exported as `./oro.css`.
 - `scripts/build-oro.mjs` — semantic extension generator; `pnpm tokens` regenerates both themes.
 
@@ -38,9 +41,7 @@ on it and import its theme and components directly.
 - `src/generated/tokens.tsx` — GENERATED hex token object, the package's `.` and
   `./tokens` entry. Mobile (Expo) and other platforms import this.
 - `public/favicon.svg` — GENERATED app icon from `tokens.json` + the title.
-- `src/components/ui/` — the initial shadcn scaffold, exported as
-  `./components/*`. Generated systems keep and theme it; Figma imports prune and
-  restyle it; code imports replace it with the source component library.
+- `src/components/ui/` — the ORO AI source component library, exported as `./components/*`.
 - `src/lib/` (`cn`) and `src/hooks/` — exported as `./lib/*` and `./hooks/*`.
 - `src/App.tsx` — the entry point for the living style guide.
 - `src/preview/DesignSystemBrowser.tsx` — the persistent grouped navigation,

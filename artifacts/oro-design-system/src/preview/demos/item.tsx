@@ -1,0 +1,5 @@
+import * as C from "../../components/ui/item";
+import { Button } from "../../components/ui/button";
+import { FileText } from "lucide-react";
+import { Title } from "../foundations";
+export default function Demo(){return <><Title eyebrow="Data display / Item" title="Item" sub="Default, outline and muted list items with supporting content and actions."/><div className="ds-panel"><C.ItemGroup>{(["default","outline","muted"] as const).map((variant,i)=><div key={variant}><C.Item variant={variant} size={i===2?"sm":"default"}><C.ItemHeader><span className="text-xs text-muted-foreground">{variant}</span></C.ItemHeader><C.ItemMedia variant="icon"><FileText/></C.ItemMedia><C.ItemContent><C.ItemTitle>Quotation preview</C.ItemTitle><C.ItemDescription>Awaiting a manager decision.</C.ItemDescription></C.ItemContent><C.ItemActions><Button variant="outline">Details</Button></C.ItemActions><C.ItemFooter><span className="text-xs text-muted-foreground">Illustrative record only</span></C.ItemFooter></C.Item>{i<2&&<C.ItemSeparator/>}</div>)}</C.ItemGroup></div></>}

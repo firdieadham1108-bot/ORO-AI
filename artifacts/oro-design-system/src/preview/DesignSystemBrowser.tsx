@@ -1,17 +1,19 @@
 import { Suspense, useEffect, useState } from "react";
 import { ALL_ENTRIES, DESIGN_SYSTEM, NAV_GROUPS } from "./registry";
 import "../oro.css";
+import { useTheme } from "next-themes";
 
 export function DesignSystemBrowser() {
   const read = () => new URLSearchParams(location.hash.slice(1)).get("page") || "overview";
   const [selected, setSelected] = useState(read);
   const [dark, setDark] = useState(() => new URLSearchParams(location.search).get("theme") === "dark");
+  const {setTheme} = useTheme();
   useEffect(() => {
     const handler = () => setSelected(read());
     addEventListener("hashchange", handler);
     return () => removeEventListener("hashchange", handler);
   }, []);
-  useEffect(() => { document.documentElement.classList.toggle("dark", dark); }, [dark]);
+  useEffect(() => { setTheme(dark ? "dark" : "light"); }, [dark, setTheme]);
   const page = ALL_ENTRIES.find(p => p.id === selected) || ALL_ENTRIES[0];
   const Page = page.Page;
   return <div className="ds-shell oro-library">
@@ -34,7 +36,7 @@ export function DesignSystemBrowser() {
         <button onClick={()=>setDark(!dark)} aria-pressed={dark} className="text-xs border border-border rounded-full px-4 py-2 bg-card">{dark?"Light theme":"Dark theme"}</button>
       </header>
       <Suspense fallback={<p role="status">Loading component…</p>}><Page /></Suspense>
-      <footer className="mt-12 border-t border-border pt-5 text-xs text-muted-foreground">Source-backed extraction · Five-family pilot · Application requires explicit approval.</footer>
+      <footer className="mt-12 border-t border-border pt-5 text-xs text-muted-foreground">Source-backed extraction · 58 component families · Application requires explicit approval.</footer>
     </main>
   </div>;
 }
