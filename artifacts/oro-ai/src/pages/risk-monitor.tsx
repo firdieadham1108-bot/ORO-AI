@@ -5,7 +5,10 @@ import type { Commitment } from "@workspace/api-client-react";
 import { ShieldCheck } from "lucide-react";
 import { ErrorBox } from "@/components/shell";
 import { RiskAlerts, SimulationBar } from "@/components/risk";
-import { PageHeader, RiskBadge, SkeletonRows, Empty } from "@/components/kit";
+import { PageHeader } from "@workspace/oro-design-system/components/ui/page-header";
+import { RiskBadge } from "@workspace/oro-design-system/components/ui/status-badges";
+import { SkeletonRows } from "@workspace/oro-design-system/components/ui/skeleton-rows";
+import { Empty } from "@workspace/oro-design-system/components/ui/empty-state";
 import { rm } from "@/lib/util";
 import { shortDay } from "@/lib/dates";
 

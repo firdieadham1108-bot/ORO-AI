@@ -5,6 +5,9 @@ import { ErrorBoundary } from '@/components/error-boundary';
 
 import './index.css';
 
+// Shared primitives (including portal content) use the design-system scope.
+document.body.classList.add('oro-library');
+
 createRoot(document.getElementById('root')!, {
   // Keeps caught errors off reportError(), which would raise the dev overlay.
   onCaughtError: (error, errorInfo) => {

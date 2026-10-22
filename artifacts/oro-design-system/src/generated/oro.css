@@ -16,6 +16,13 @@
   --oro-gold-deep: #8E6F2B;
   --oro-gold-soft: #F3EBD7;
   --oro-navy: #0F1E33;
+  --oro-navy-secondary: #1A2C47;
+  --oro-navy-tertiary: #253A5A;
+  --oro-line-subtle: #EEECE7;
+  --oro-neutral-background: #EFEDE8;
+  --oro-skeleton-base: #ECEAE4;
+  --oro-skeleton-highlight: #F5F4F0;
+  --oro-surface-shadow: 0 1px 2px rgba(15,30,51,.04),0 4px 14px rgba(15,30,51,.05);
 }
 .dark {
   --oro-success: #8AD4AA;
@@ -34,4 +41,11 @@
   --oro-gold-deep: #DFC584;
   --oro-gold-soft: #F3EBD7;
   --oro-navy: #0F1E33;
+  --oro-navy-secondary: #1A2C47;
+  --oro-navy-tertiary: #253A5A;
+  --oro-line-subtle: #243448;
+  --oro-neutral-background: #243448;
+  --oro-skeleton-base: #243448;
+  --oro-skeleton-highlight: #304258;
+  --oro-surface-shadow: 0 1px 2px rgba(0,0,0,.15),0 4px 14px rgba(0,0,0,.2);
 }

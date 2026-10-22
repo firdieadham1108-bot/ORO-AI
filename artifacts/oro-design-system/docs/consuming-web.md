@@ -5,8 +5,8 @@ React/Vite and other shadcn/Tailwind web consumers. If the app already contains
 a local theme or component library, also read
 `artifacts/oro-design-system/docs/migrating-web.md` before writing UI.
 
-The user has not yet approved applying this package to ORO AI. These instructions
-are for use only after that separate approval.
+The user approved applying this package to ORO AI. Existing app screens now consume
+the shared theme and components; preserve product behavior during future changes.
 
 ## Theme
 

@@ -4,7 +4,11 @@ import type { AttentionItem } from "@workspace/api-client-react";
 import { Inbox, Clock3, CheckCircle2, CalendarCheck, AlertTriangle, ChevronRight, ShieldAlert, Users, MessageSquarePlus, History, ClipboardCheck, CalendarDays } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { ErrorBox } from "@/components/shell";
-import { PageHeader, RiskBadge, SkeletonRows, Empty, initials } from "@/components/kit";
+import { PageHeader } from "@workspace/oro-design-system/components/ui/page-header";
+import { RiskBadge } from "@workspace/oro-design-system/components/ui/status-badges";
+import { SkeletonRows } from "@workspace/oro-design-system/components/ui/skeleton-rows";
+import { Empty } from "@workspace/oro-design-system/components/ui/empty-state";
+import { initials } from "@/lib/initials";
 import { rm, myTime } from "@/lib/util";
 import { shortDay, dayNum, monthShort } from "@/lib/dates";
 

@@ -4,9 +4,9 @@
 
 This is the completed source-backed extraction of ORO AI: 58 component families,
 59 source modules and 58 preview stories. The five-family pilot was approved and
-the rest ported in dependency order. Do not apply this package to the app,
-change existing screens, remove local components, or rebuild canvas mockups until
-the user separately approves application. Extraction approval is not migration approval.
+the rest ported in dependency order. The user separately approved application to ORO AI after reviewing the library.
+The app now consumes this package. Canvas mockups remain outside that approval;
+do not rebuild them unless requested.
 
 ## Extraction references and runtime
 

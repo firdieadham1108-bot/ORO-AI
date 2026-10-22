@@ -3,7 +3,10 @@ import { useListActivity } from "@workspace/api-client-react";
 import type { ActivityEntry } from "@workspace/api-client-react";
 import { History, Search } from "lucide-react";
 import { ErrorBox } from "@/components/shell";
-import { PageHeader, SkeletonRows, Empty, StatusBadge } from "@/components/kit";
+import { PageHeader } from "@workspace/oro-design-system/components/ui/page-header";
+import { SkeletonRows } from "@workspace/oro-design-system/components/ui/skeleton-rows";
+import { Empty } from "@workspace/oro-design-system/components/ui/empty-state";
+import { StatusBadge } from "@workspace/oro-design-system/components/ui/status-badges";
 import { myClock } from "@/lib/util";
 import { fullDay, isoDayMY } from "@/lib/dates";
 

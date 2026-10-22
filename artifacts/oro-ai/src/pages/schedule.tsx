@@ -4,7 +4,9 @@ import { useGetStaffSchedule } from "@workspace/api-client-react";
 import type { ScheduleBlock, StaffScheduleDay, StaffScheduleRow } from "@workspace/api-client-react";
 import { ChevronLeft, ChevronRight, CalendarDays, Plane, Wrench, FileCheck2, CheckCircle2, Moon, Star } from "lucide-react";
 import { ErrorBox } from "@/components/shell";
-import { PageHeader, Empty, initials } from "@/components/kit";
+import { PageHeader } from "@workspace/oro-design-system/components/ui/page-header";
+import { Empty } from "@workspace/oro-design-system/components/ui/empty-state";
+import { initials } from "@/lib/initials";
 import { myClock } from "@/lib/util";
 import { addDays, shortDay, dayNum } from "@/lib/dates";
 

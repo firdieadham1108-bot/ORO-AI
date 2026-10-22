@@ -22,7 +22,7 @@ export function DesignSystemBrowser() {
         <img src={`${import.meta.env.BASE_URL}oro-logo.png`} width="44" height="44" alt="ORO AI penguin logo" className="rounded-xl" />
         <div><div className="ds-title text-lg font-extrabold">ORO <span style={{color:"var(--oro-gold)"}}>AI</span></div><div className="text-xs opacity-65">Design system</div></div>
       </div>
-      <p className="text-xs mt-5 opacity-65 leading-relaxed">Extracted from the working app.<br />No screens changed.</p>
+      <p className="text-xs mt-5 opacity-65 leading-relaxed">Extracted from the working app.<br />Shared with the working app.</p>
       <nav aria-label="Design system pages">
         {[{name:"Start here",entries:[ALL_ENTRIES[0]]},...NAV_GROUPS].map(group=><div key={group.name} className="mt-6">
           <div className="text-[10px] uppercase tracking-widest opacity-50 mb-2">{group.name}</div>
@@ -36,7 +36,7 @@ export function DesignSystemBrowser() {
         <button onClick={()=>setDark(!dark)} aria-pressed={dark} className="text-xs border border-border rounded-full px-4 py-2 bg-card">{dark?"Light theme":"Dark theme"}</button>
       </header>
       <Suspense fallback={<p role="status">Loading component…</p>}><Page /></Suspense>
-      <footer className="mt-12 border-t border-border pt-5 text-xs text-muted-foreground">Source-backed extraction · 58 component families · Application requires explicit approval.</footer>
+      <footer className="mt-12 border-t border-border pt-5 text-xs text-muted-foreground">Source-backed extraction · 58 component families · Shared with ORO AI.</footer>
     </main>
   </div>;
 }
