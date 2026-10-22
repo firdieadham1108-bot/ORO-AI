@@ -1,0 +1,19 @@
+kind = "design-system"
+previewPath = "/oro-design-system/"
+title = "ORO AI Design System"
+description = "Source-extracted ORO AI navy and gold tokens, penguin brand, typography and reusable interface components. Existing app screens remain unchanged pending approval."
+version = "1.0.0"
+id = "artifacts/oro-design-system"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/oro-design-system/" ]
+localPort = 26117
+
+[services.development]
+run = "pnpm --filter @workspace/oro-design-system run dev"
+
+[services.env]
+PORT = "26117"
+BASE_PATH = "/oro-design-system/"

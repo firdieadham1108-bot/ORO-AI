@@ -1,0 +1,37 @@
+/* Generated from tokens.json semantic tokens. Do not edit. */
+:root {
+  --oro-success: #1B7F4C;
+  --oro-success-background: #E6F4EC;
+  --oro-success-border: #C7E6D3;
+  --oro-warning: #B7791F;
+  --oro-warning-background: #FBF1DC;
+  --oro-warning-border: #EFD9AB;
+  --oro-danger: #B42318;
+  --oro-danger-background: #FBEAE7;
+  --oro-danger-border: #F1CBC4;
+  --oro-verify: #3B5B8C;
+  --oro-verify-background: #E8EEF7;
+  --oro-verify-border: #CDD9EC;
+  --oro-gold: #B99545;
+  --oro-gold-deep: #8E6F2B;
+  --oro-gold-soft: #F3EBD7;
+  --oro-navy: #0F1E33;
+}
+.dark {
+  --oro-success: #8AD4AA;
+  --oro-success-background: #153B2B;
+  --oro-success-border: #28523C;
+  --oro-warning: #EDC276;
+  --oro-warning-background: #3A2D18;
+  --oro-warning-border: #65502B;
+  --oro-danger: #FFB4A7;
+  --oro-danger-background: #481F1C;
+  --oro-danger-border: #75352E;
+  --oro-verify: #ABC6EC;
+  --oro-verify-background: #1D314C;
+  --oro-verify-border: #3D5474;
+  --oro-gold: #B99545;
+  --oro-gold-deep: #DFC584;
+  --oro-gold-soft: #F3EBD7;
+  --oro-navy: #0F1E33;
+}

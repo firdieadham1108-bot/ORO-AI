@@ -13,6 +13,12 @@ description: Decisions for the ORO AI hackathon prototype (formerly QuoteGuard) 
   **Why:** the user said the old design "pretty sucks" and uploaded a from-zero blueprint; we agreed to upgrade the look and add pages instead of rebuilding.
   **How to apply:** keep the deterministic engine, tests and protected components (risk, quote-document, quote-terms, voice-input, wallet-badge, lock-badge) unchanged in logic/text/test ids; only styling may change there.
 - Brand: navy `#0F1E33` + gold `#B99545` (matches the app icon), "ORO" navy / "AI" gold wordmark, green/amber/red statuses, Inter + Manrope + IBM Plex Mono. Taken from the user's blueprint token table; the rest of that blueprint (Postgres, 14 tables, wizard, 2.0HP price, Saturday hours, renamed staff) was deliberately NOT adopted.
+- The penguin on a brown rounded square with “ORO AI” text is the official user-supplied logo, replacing the generated ring/O mark. Keep the navy/gold interface rather than recolouring it to brown.
+  **Why:** the user identified the uploaded penguin artwork as “our logo” and asked to add it, not redesign the app.
+  **How to apply:** use the supplied artwork for brand imagery and installable icons; do not generate a replacement.
+- Design-system extraction must not change any existing ORO AI screen until the user explicitly agrees to apply it.
+  **Why:** the user requested extraction first and a separate application decision once it is ready.
+  **How to apply:** present the extracted library for review; approval to continue extraction is not approval to migrate screens or canvas mockups.
 - The user watches the preview live while I work and presses Reset Demo State themselves (a `POST /api/demo/reset` in the API log with no agent action = the user). Do not treat an unexpected reset as a bug, and expect my curl test records to vanish mid-session.
 - Crew pick order comes from `staff.dispatch_order` (Bala 1, Mei 2, Chong 3, Ali 4) so the Monday crew is Bala + Mei and the recovery picks Chong.
   **Why:** Ali and Chong are both free seniors on Monday; the user expects the recovery to find Chong "dynamically", so Chong must rank ahead of Ali.

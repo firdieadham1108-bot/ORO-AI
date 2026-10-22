@@ -74,7 +74,7 @@ export function Shell({ children }: { children: ReactNode }) {
       <div className="app-shell">
         <aside className="sidebar no-print" aria-label="Main navigation">
           <Link href="/" className="brand" data-testid="link-home">
-            <span className="brand-mark">O</span>
+            <img className="brand-mark" src={`${import.meta.env.BASE_URL}icons/oro-logo.png`} alt="ORO AI penguin logo" />
             <span className="brand-text"><Wordmark light /><small>CoolAir Services · Cheras</small></span>
           </Link>
           <div className="nav-label">Workspace</div>
@@ -93,7 +93,7 @@ export function Shell({ children }: { children: ReactNode }) {
         <div className="workspace">
           <header className="topbar">
             <div className="flex items-center gap-3 min-w-0">
-              <Link href="/" className="topbar-brand"><span className="brand-mark sm">O</span><Wordmark /></Link>
+              <Link href="/" className="topbar-brand"><img className="brand-mark sm" src={`${import.meta.env.BASE_URL}icons/oro-logo.png`} alt="ORO AI penguin logo" /><Wordmark /></Link>
               <div className="crumb hide-mobile"><span>CoolAir Services</span><span aria-hidden>/</span><strong>{current?.label ?? "Not found"}</strong></div>
             </div>
             <div className="top-actions no-print">

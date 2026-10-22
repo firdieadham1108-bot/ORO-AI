@@ -2,11 +2,14 @@
 // It does NOT cache the app or any data, and nothing can be created or edited offline.
 // Its only job: when a page is opened with no connection, show a clear "you are offline" page
 // instead of the browser's error screen. Every API call goes straight to the network.
-const CACHE = "oro-offline-v2";
+const CACHE = "oro-offline-v3";
 const OFFLINE_URL = "offline.html";
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.add(new Request(OFFLINE_URL, { cache: "reload" }))));
+  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll([
+    new Request(OFFLINE_URL, { cache: "reload" }),
+    new Request("icons/oro-logo.png", { cache: "reload" }),
+  ])));
   self.skipWaiting();
 });
 
@@ -19,6 +22,10 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
+  if (new URL(event.request.url).pathname.endsWith("/icons/oro-logo.png")) {
+    event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
+    return;
+  }
   if (event.request.mode !== "navigate") return; // assets and /api requests are not touched
   event.respondWith(fetch(event.request).catch(() => caches.match(OFFLINE_URL)));
 });
