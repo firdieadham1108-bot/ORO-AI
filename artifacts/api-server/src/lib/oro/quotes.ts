@@ -23,6 +23,9 @@ export interface QuoteRow {
   risk_status: string | null;
   risk_reason: string | null;
   line_items: string | null;
+  message: string | null;
+  created_by: string | null;
+  rejection_reason: string | null;
   created_at: string;
 }
 
@@ -55,6 +58,9 @@ export function toQuote(row: QuoteRow) {
     status: row.status,
     approvedBy: row.approved_by,
     approvedAt: row.approved_at,
+    rejectionReason: row.rejection_reason,
+    createdBy: row.created_by,
+    message: row.message,
     crew: row.crew ? (JSON.parse(row.crew) as string[]) : [],
     lineItems: linesOf(row).map((l) => ({
       serviceCode: l.code,
@@ -107,8 +113,8 @@ export function insertQuote(input: NewQuote, actor: string): QuoteRow {
       .prepare(
         `INSERT INTO quotes (reference, customer_name, location, service_code, quantity, unit_price_sen,
                              total_sen, requested_date, appointment_date, status, approved_by, approved_at,
-                             crew, risk_status, line_items, message, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                             crew, risk_status, line_items, message, created_by, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         placeholder,
@@ -127,21 +133,12 @@ export function insertQuote(input: NewQuote, actor: string): QuoteRow {
         input.approval ? "FEASIBLE" : null,
         JSON.stringify(lines.map((l) => ({ code: l.service.code, quantity: l.quantity, unitPriceSen: l.service.unitPriceSen }))),
         input.message,
+        actor,
         now,
       );
     const id = Number(insert.lastInsertRowid);
     const reference = quoteReference(id);
     db.prepare("UPDATE quotes SET reference = ? WHERE id = ?").run(reference, id);
-
-    // An approved quote reserves its crew for the appointment window (simulated Orbyte Work assignment),
-    // so later availability checks and the risk monitor can see who this job depends on.
-    if (input.approval) {
-      const window = workingWindow(input.approval.appointmentDate);
-      const title = `${input.location} - ${lines.map((l) => l.service.name).join(" + ")} (${input.customerName})`;
-      for (const member of input.approval.crew) {
-        MockOrbyteWorkAdapter.createAssignment({ staffId: member.id, title, startAt: window.start, endAt: window.end, reference, quoteId: id });
-      }
-    }
 
     logActivity(
       "price_calculated",
@@ -150,27 +147,76 @@ export function insertQuote(input: NewQuote, actor: string): QuoteRow {
       "info",
     );
     if (input.approval) {
-      const a = input.approval;
-      logActivity(
-        "quotation_approved",
-        `${a.approvedBy} approved quotation ${reference} for ${input.customerName} (${input.location}): ` +
-          `${description}, total ${formatRm(totalSen)}. ` +
-          `Appointment: ${formatLongDate(a.appointmentDate)}` +
-          (a.appointmentDate !== input.requestedDate
-            ? ` (customer asked for ${formatLongDate(input.requestedDate)}, which was not feasible).`
-            : ".") +
-          ` Crew reserved: ${a.crew.map(crewLabel).join(", ")}.`,
-        a.approvedBy,
-        "success",
-      );
+      reserveCrewAndLogApproval(getQuoteRow(id)!, input.approval);
     } else {
       logActivity(
         "quote_created",
-        `Draft quotation ${reference} created for ${input.customerName} (${input.location}), requested date ${input.requestedDate}.`,
+        `Draft quotation ${reference} created for ${input.customerName} (${input.location}), requested date ${input.requestedDate}. Waiting for manager approval.`,
         actor,
         "success",
       );
     }
     return db.prepare("SELECT * FROM quotes WHERE id = ?").get(id) as unknown as QuoteRow;
   });
+}
+
+export function getQuoteRow(id: number): QuoteRow | undefined {
+  return db.prepare("SELECT * FROM quotes WHERE id = ?").get(id) as unknown as QuoteRow | undefined;
+}
+
+/** Service names of every line, e.g. "Installation 1.5HP + Normal Servicing". */
+export function serviceSummaryOf(row: QuoteRow): string {
+  return linesOf(row)
+    .map((l) => `${l.quantity} x ${findService(l.code)?.name ?? l.code}`)
+    .join(" + ");
+}
+
+/** Codes of every line (first = main service). Used to re-check a draft's crew rule at approval time. */
+export function lineCodesOf(row: QuoteRow): string[] {
+  return linesOf(row).map((l) => l.code);
+}
+
+/**
+ * Reserve the crew for the appointment window (simulated Orbyte Work assignments) and write the approval
+ * to the activity log. Shared by direct approvals (new row) and draft approvals (existing row).
+ * Must run inside the caller's transaction.
+ */
+export function reserveCrewAndLogApproval(
+  row: QuoteRow,
+  approval: { appointmentDate: string; approvedBy: string; crew: CrewMember[] },
+): void {
+  const lines = linesOf(row);
+  const names = lines.map((l) => findService(l.code)?.name ?? l.code).join(" + ");
+  const description = lines.map((l) => `${l.quantity} x ${findService(l.code)?.name ?? l.code}`).join(" + ");
+  const window = workingWindow(approval.appointmentDate);
+  const title = `${row.location} - ${names} (${row.customer_name})`;
+  for (const member of approval.crew) {
+    MockOrbyteWorkAdapter.createAssignment({ staffId: member.id, title, startAt: window.start, endAt: window.end, reference: row.reference, quoteId: row.id });
+  }
+  logActivity(
+    "quotation_approved",
+    `${approval.approvedBy} approved quotation ${row.reference} for ${row.customer_name} (${row.location}): ` +
+      `${description}, total ${formatRm(row.total_sen)}. ` +
+      `Appointment: ${formatLongDate(approval.appointmentDate)}` +
+      (approval.appointmentDate !== row.requested_date
+        ? ` (customer asked for ${formatLongDate(row.requested_date)}, which was not feasible).`
+        : ".") +
+      ` Crew reserved: ${approval.crew.map(crewLabel).join(", ")}.`,
+    approval.approvedBy,
+    "success",
+  );
+}
+
+/** Turn an existing draft row into an approved quotation (status, dates, crew), then reserve the crew. */
+export function markDraftApproved(
+  row: QuoteRow,
+  approval: { appointmentDate: string; approvedBy: string; crew: CrewMember[] },
+): QuoteRow {
+  db.prepare(
+    `UPDATE quotes SET status = 'approved', appointment_date = ?, approved_by = ?, approved_at = ?, crew = ?,
+                       risk_status = 'FEASIBLE', risk_reason = NULL, rejection_reason = NULL WHERE id = ?`,
+  ).run(approval.appointmentDate, approval.approvedBy, nowMyt(), JSON.stringify(approval.crew.map(crewLabel)), row.id);
+  const updated = getQuoteRow(row.id)!;
+  reserveCrewAndLogApproval(updated, approval);
+  return updated;
 }

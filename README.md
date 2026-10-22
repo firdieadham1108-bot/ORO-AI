@@ -69,7 +69,7 @@ flowchart LR
 | API contract | OpenAPI (`lib/api-spec/openapi.yaml`), with generated React Query hooks and Zod validation |
 | Orbyte integration | Mock adapters only. See [`orbyte-api-assumptions.md`](orbyte-api-assumptions.md) |
 | Voice input | Browser speech recognition / audio recorder; optional OpenAI speech-to-text; labelled simulated transcript when no key is set |
-| Mobile | Responsive layout (checked at 375px) + installable web app (PWA): `manifest.json`, icons, online-first service worker |
+| Mobile | Responsive layout (checked at 375px): bottom tab bar + "More" sheet on phones, sidebar on desktop; installable web app (PWA): `manifest.json`, icons, online-first service worker |
 | Tests | Node's built-in test runner (`node --test`) |
 | Package manager | pnpm workspaces (monorepo) |
 
@@ -88,7 +88,8 @@ flowchart LR
 | Price validity vs. crew-slot hold | `artifacts/oro-ai/src/components/quote-terms.tsx` |
 | Installable app (PWA) | `artifacts/oro-ai/public/manifest.json`, `public/icons/`, `public/sw.js`, `index.html` |
 | Synthetic demo data | `artifacts/api-server/src/lib/oro/seed.ts` |
-| The web page | `artifacts/oro-ai/src/pages/workspace.tsx` |
+| App shell (sidebar, mobile tabs, role switch) | `artifacts/oro-ai/src/components/shell.tsx` |
+| Pages: Dashboard, New Enquiry, Quotations, Staff Schedule, Manager Approval, Risk Monitor, Activity Log | `artifacts/oro-ai/src/pages/` (`dashboard.tsx`, `workspace.tsx`, `quotations.tsx`, `schedule.tsx`, `approvals.tsx`, `risk-monitor.tsx`, `activity.tsx`) |
 | Automated tests | `artifacts/api-server/tests/` |
 
 ---
@@ -105,23 +106,42 @@ flowchart LR
 
 To share it with judges, use Replit's **Publish** button. Judges only need the published URL; they do not need to install anything.
 
+### The pages
+
+The left sidebar (bottom tabs on a phone) has seven pages. Every number on them comes from the database; nothing is hard-coded.
+
+| Page | What it shows |
+|---|---|
+| **Dashboard** (`/`) | Counts of enquiries, pending and approved quotations, upcoming appointments and scheduling conflicts, plus a "Needs attention" list |
+| **New Enquiry** (`/enquiry`) | The quotation workspace: paste or dictate the enquiry, get the price, the date check and Option A / B. Managers approve here directly; Sales staff can **Send to Manager for approval** instead |
+| **Quotations** (`/quotations`) | Every quote with status (Pending / Approved / Declined), crew and appointment; click a row for the printable quotation |
+| **Staff Schedule** (`/schedule`) | A week board per technician: leave from eLeave, Orbyte Work jobs and ORO bookings (click a booking to open its quote) |
+| **Manager Approval** (`/approvals`) | The queue of drafts sent by Sales. Each draft is re-checked against today's leave and job records; the manager picks a feasible date and approves, or declines with a reason |
+| **Risk Monitor** (`/risk`) | Approved commitments and their risk status, with the recovery flow when a technician's leave is approved later |
+| **Activity Log** (`/activity`) | Every action with time, actor and details, searchable |
+
+The header shows the demo **reference date (Wed 21 Oct 2026)**, the role switch (**Mei** = Sales, **Faizal** = Manager) and **Reset Demo State**.
+
 ### Demo script (about 3 minutes)
 
 1. Click **Reset Demo State** (top right) to start clean.
-2. Choose **Manager (Faizal)** in the header role switch.
+2. Choose **Faizal** (Manager) in the header role switch and open **New Enquiry**.
 3. Click the chip **Scenario 1: Flagship Friday Conflict (EN)**, then **Analyse Enquiry**.
    You will see RM1,140, a Friday conflict with reasons, and Monday offered as Option B.
    The card also shows **Quotation Price Valid: 7 Days** and a **Crew Slot Temporary Hold: 30s (Demo Simulation)** countdown.
    Optional: click **Simulate Hold Expiry**. The badge turns red (**HOLD EXPIRED — Needs Re-verification before confirming**) and the approve button locks until you click **Re-verify Availability**.
-4. Switch to **Sales Staff (Mei)**. The approve button locks with the badge "Requires Manager (Faizal) Approval". Switch back to Manager.
+4. Switch to **Mei** (Sales). The approve button locks with the badge "Requires Manager (Faizal) Approval". Switch back to Manager.
 5. Click **Approve Quotation & Confirm Slot** on Monday, then **View Printable Quotation** → **Print / Save PDF**.
    The **Orbyte Credit Wallet** pill in the top banner drops from 25.00 to **24.90 Credits**.
+   Open **Staff Schedule**: Bala and Mei now show an **ORO-1023** booking on Monday. **Dashboard** counts update too.
 6. Click **Simulate Orbyte Event: Approve Bala's Emergency Leave (Mon, 26 Oct)**. A red **COMMITMENT AT RISK** card recommends **Chong**.
 7. Click **Approve Recovery & Update Orbyte Work**. The crew becomes Chong + Mei, and the activity log records the swap.
    The wallet drops again, to **24.80 Credits**.
 8. Optional: click **Simulate 10s Contractor Voice Note** (Voice-to-Quote). Wait about 9 seconds, or click Skip, and the RM310 servicing quote appears.
 9. Optional: try Scenarios 2-4 (Bahasa Melayu multi-service, Chinese enquiry, missing information).
    Click **Reset Demo State** before each one, because Scenario 1's booking uses up Monday's crew.
+10. Optional, the Sales → Manager hand-off: as **Mei**, analyse Scenario 2 and click **Send to Manager for approval**.
+    Switch to **Faizal** and open **Manager Approval** (the sidebar badge shows the count). The draft is re-checked, a feasible date is pre-selected; click **Approve & confirm date**, or **Decline** and type a reason. Both appear in **Quotations** and the **Activity Log**.
 
 ### Voice-to-Quote (optional feature A)
 
@@ -162,7 +182,7 @@ It never pretends to have heard a file it could not transcribe. Typing the messa
   - To install it, open the **published** URL on the phone:
     - **Android (Chrome):** menu ⋮ → **Install app** / **Add to Home screen**.
     - **iPhone (Safari):** Share → **Add to Home Screen**.
-  - It opens full-screen with the ORO AI icon and a deep navy (`#0F172A`) theme.
+  - It opens full-screen with the ORO AI icon and the navy (`#0F1E33`) and gold (`#B99545`) theme.
   - The app is **online-first**: it does not work offline and saves nothing offline. Without a connection it shows a "You are offline" page.
 
 ### Running outside Replit
@@ -185,7 +205,7 @@ npm test
 
 1. builds a private test copy of the API server
 2. starts it with its **own temporary database**, so your demo data is not touched and the app does not need to be running
-3. runs the 10 required test cases from the hackathon brief against the real backend logic and the real SQLite database
+3. runs the 10 required test cases from the hackathon brief (plus 9 extra checks) against the real backend logic and the real SQLite database
 4. prints PASS (✔) or FAIL (✖) for each test and exits with an error code if anything fails
 
 | # | Test | What is checked |
@@ -201,13 +221,17 @@ npm test
 | 9 | Manglish / BM | *"Boss, Friday boleh pasang 6 biji 1.5HP dekat Cheras?"* → 6 × 1.5HP install, Fri 23 Oct, Cheras |
 | 10 | Leave-change detection + recovery | Bala's approved Monday leave flags the job **AT_RISK** and recommends **Chong**; only the manager can approve the swap |
 
-Five extra checks also run:
+Nine extra checks also run:
 
 - recovery skips a technician who is already booked
 - preset scenarios 2 and 3 behave as expected
 - the simulated voice note is labelled, logged as `VOICE_TRANSCRIBED` and quoted at RM310 by the same pipeline
 - voice uploads without a key are clearly labelled as simulated, and bad files are refused
 - the Orbyte Credit Wallet: approval and recovery each cost 0.10 credits, refused actions are free, and a reset restores 25.00
+- the Dashboard summary counts match the quotes and commitments in the database
+- the Staff Schedule shows Ali's Friday leave, the Friday Orbyte jobs, weekends as non-working days, and a booking after approval
+- a draft sent by Sales is re-checked, approved by the manager on a feasible date (crew booked, 0.10 credits charged) and refused for Sales staff (HTTP 403)
+- declining a draft keeps it out of the schedule, records the reason, and costs nothing
 
 The test server always runs **without** speech keys, so results are the same on every machine.
 

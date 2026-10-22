@@ -270,9 +270,12 @@ export const ListQuotesResponseItem = zod.object({
   "totalPrice": zod.number(),
   "requestedDate": zod.string(),
   "appointmentDate": zod.string().nullable(),
-  "status": zod.enum(['draft', 'approved']),
+  "status": zod.enum(['draft', 'approved', 'rejected']),
   "approvedBy": zod.string().nullable(),
   "approvedAt": zod.string().nullable(),
+  "rejectionReason": zod.string().nullable(),
+  "createdBy": zod.string().nullable(),
+  "message": zod.string().nullable(),
   "crew": zod.array(zod.string()),
   "lineItems": zod.array(zod.object({
   "serviceCode": zod.string(),
@@ -300,6 +303,12 @@ export const createQuoteBodyLocationMax = 240;
 
 export const createQuoteBodyMessageMax = 2000;
 
+export const createQuoteBodyExtraItemsItemQuantityMax = 500;
+
+export const createQuoteBodyExtraItemsMax = 5;
+
+export const createQuoteBodyRequestedByMax = 80;
+
 
 
 export const CreateQuoteBody = zod.object({
@@ -308,7 +317,12 @@ export const CreateQuoteBody = zod.object({
   "quantity": zod.number().int().min(1).max(createQuoteBodyQuantityMax),
   "requestedDate": zod.string().regex(createQuoteBodyRequestedDateRegExp),
   "location": zod.string().min(1).max(createQuoteBodyLocationMax),
-  "message": zod.string().max(createQuoteBodyMessageMax).nullish()
+  "message": zod.string().max(createQuoteBodyMessageMax).nullish(),
+  "extraItems": zod.array(zod.object({
+  "serviceCode": zod.string(),
+  "quantity": zod.number().int().min(1).max(createQuoteBodyExtraItemsItemQuantityMax)
+})).max(createQuoteBodyExtraItemsMax).nullish(),
+  "requestedBy": zod.string().max(createQuoteBodyRequestedByMax).nullish()
 })
 
 export const CreateQuoteResponse = zod.object({
@@ -324,9 +338,12 @@ export const CreateQuoteResponse = zod.object({
   "totalPrice": zod.number(),
   "requestedDate": zod.string(),
   "appointmentDate": zod.string().nullable(),
-  "status": zod.enum(['draft', 'approved']),
+  "status": zod.enum(['draft', 'approved', 'rejected']),
   "approvedBy": zod.string().nullable(),
   "approvedAt": zod.string().nullable(),
+  "rejectionReason": zod.string().nullable(),
+  "createdBy": zod.string().nullable(),
+  "message": zod.string().nullable(),
   "crew": zod.array(zod.string()),
   "lineItems": zod.array(zod.object({
   "serviceCode": zod.string(),
@@ -391,9 +408,12 @@ export const ApproveQuotationResponse = zod.object({
   "totalPrice": zod.number(),
   "requestedDate": zod.string(),
   "appointmentDate": zod.string().nullable(),
-  "status": zod.enum(['draft', 'approved']),
+  "status": zod.enum(['draft', 'approved', 'rejected']),
   "approvedBy": zod.string().nullable(),
   "approvedAt": zod.string().nullable(),
+  "rejectionReason": zod.string().nullable(),
+  "createdBy": zod.string().nullable(),
+  "message": zod.string().nullable(),
   "crew": zod.array(zod.string()),
   "lineItems": zod.array(zod.object({
   "serviceCode": zod.string(),
@@ -428,9 +448,12 @@ export const GetQuoteResponse = zod.object({
   "totalPrice": zod.number(),
   "requestedDate": zod.string(),
   "appointmentDate": zod.string().nullable(),
-  "status": zod.enum(['draft', 'approved']),
+  "status": zod.enum(['draft', 'approved', 'rejected']),
   "approvedBy": zod.string().nullable(),
   "approvedAt": zod.string().nullable(),
+  "rejectionReason": zod.string().nullable(),
+  "createdBy": zod.string().nullable(),
+  "message": zod.string().nullable(),
   "crew": zod.array(zod.string()),
   "lineItems": zod.array(zod.object({
   "serviceCode": zod.string(),
@@ -442,6 +465,314 @@ export const GetQuoteResponse = zod.object({
   "riskStatus": zod.union([zod.literal('FEASIBLE'),zod.literal('AT_RISK'),zod.literal(null)]).nullable(),
   "riskReason": zod.string().nullable(),
   "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Re-check a draft quotation's requested date and find alternatives (for manager approval)
+ */
+export const GetQuoteScheduleOptionsParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const GetQuoteScheduleOptionsResponse = zod.object({
+  "quote": zod.object({
+  "id": zod.number().int(),
+  "reference": zod.string(),
+  "companyName": zod.string(),
+  "customerName": zod.string(),
+  "location": zod.string(),
+  "serviceCode": zod.string(),
+  "serviceName": zod.string(),
+  "quantity": zod.number().int(),
+  "unitPrice": zod.number(),
+  "totalPrice": zod.number(),
+  "requestedDate": zod.string(),
+  "appointmentDate": zod.string().nullable(),
+  "status": zod.enum(['draft', 'approved', 'rejected']),
+  "approvedBy": zod.string().nullable(),
+  "approvedAt": zod.string().nullable(),
+  "rejectionReason": zod.string().nullable(),
+  "createdBy": zod.string().nullable(),
+  "message": zod.string().nullable(),
+  "crew": zod.array(zod.string()),
+  "lineItems": zod.array(zod.object({
+  "serviceCode": zod.string(),
+  "serviceName": zod.string(),
+  "quantity": zod.number().int(),
+  "unitPrice": zod.number(),
+  "lineTotal": zod.number()
+})),
+  "riskStatus": zod.union([zod.literal('FEASIBLE'),zod.literal('AT_RISK'),zod.literal(null)]).nullable(),
+  "riskReason": zod.string().nullable(),
+  "createdAt": zod.string()
+}),
+  "requested": zod.object({
+  "date": zod.string(),
+  "weekday": zod.string(),
+  "verdict": zod.enum(['feasible', 'not_feasible', 'needs_verification']),
+  "workingDay": zod.boolean(),
+  "windowStart": zod.string(),
+  "windowEnd": zod.string(),
+  "requirement": zod.object({
+  "crewSize": zod.number().int(),
+  "minSeniors": zod.number().int(),
+  "windowHours": zod.number().int()
+}),
+  "availableInstallers": zod.number().int(),
+  "availableSeniorInstallers": zod.number().int(),
+  "crew": zod.array(zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "role": zod.string(),
+  "isSenior": zod.boolean()
+})),
+  "conflicts": zod.array(zod.object({
+  "staffId": zod.number().int(),
+  "staffName": zod.string(),
+  "kind": zod.enum(['leave', 'assignment']),
+  "title": zod.string(),
+  "reference": zod.string(),
+  "startAt": zod.string(),
+  "endAt": zod.string(),
+  "description": zod.string()
+})),
+  "reasons": zod.array(zod.string()),
+  "explanation": zod.string()
+}),
+  "alternatives": zod.array(zod.object({
+  "date": zod.string(),
+  "weekday": zod.string(),
+  "verdict": zod.enum(['feasible', 'not_feasible', 'needs_verification']),
+  "workingDay": zod.boolean(),
+  "windowStart": zod.string(),
+  "windowEnd": zod.string(),
+  "requirement": zod.object({
+  "crewSize": zod.number().int(),
+  "minSeniors": zod.number().int(),
+  "windowHours": zod.number().int()
+}),
+  "availableInstallers": zod.number().int(),
+  "availableSeniorInstallers": zod.number().int(),
+  "crew": zod.array(zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "role": zod.string(),
+  "isSenior": zod.boolean()
+})),
+  "conflicts": zod.array(zod.object({
+  "staffId": zod.number().int(),
+  "staffName": zod.string(),
+  "kind": zod.enum(['leave', 'assignment']),
+  "title": zod.string(),
+  "reference": zod.string(),
+  "startAt": zod.string(),
+  "endAt": zod.string(),
+  "description": zod.string()
+})),
+  "reasons": zod.array(zod.string()),
+  "explanation": zod.string()
+}))
+})
+
+
+/**
+ * Same rules as POST /approvals, applied to a draft that sales staff sent for approval. Re-checks the date, reserves the crew and marks the draft approved. 409 if the date is not feasible or the quotation is no longer a draft.
+ * @summary Manager approves an existing draft quotation for a chosen appointment date
+ */
+export const ApproveDraftQuotationParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const approveDraftQuotationBodyAppointmentDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const approveDraftQuotationBodyApproverNameMax = 80;
+
+
+
+export const ApproveDraftQuotationBody = zod.object({
+  "appointmentDate": zod.string().regex(approveDraftQuotationBodyAppointmentDateRegExp),
+  "approverName": zod.string().max(approveDraftQuotationBodyApproverNameMax).nullish()
+})
+
+export const ApproveDraftQuotationResponse = zod.object({
+  "id": zod.number().int(),
+  "reference": zod.string(),
+  "companyName": zod.string(),
+  "customerName": zod.string(),
+  "location": zod.string(),
+  "serviceCode": zod.string(),
+  "serviceName": zod.string(),
+  "quantity": zod.number().int(),
+  "unitPrice": zod.number(),
+  "totalPrice": zod.number(),
+  "requestedDate": zod.string(),
+  "appointmentDate": zod.string().nullable(),
+  "status": zod.enum(['draft', 'approved', 'rejected']),
+  "approvedBy": zod.string().nullable(),
+  "approvedAt": zod.string().nullable(),
+  "rejectionReason": zod.string().nullable(),
+  "createdBy": zod.string().nullable(),
+  "message": zod.string().nullable(),
+  "crew": zod.array(zod.string()),
+  "lineItems": zod.array(zod.object({
+  "serviceCode": zod.string(),
+  "serviceName": zod.string(),
+  "quantity": zod.number().int(),
+  "unitPrice": zod.number(),
+  "lineTotal": zod.number()
+})),
+  "riskStatus": zod.union([zod.literal('FEASIBLE'),zod.literal('AT_RISK'),zod.literal(null)]).nullable(),
+  "riskReason": zod.string().nullable(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Manager declines a draft quotation
+ */
+export const RejectDraftQuotationParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const rejectDraftQuotationBodyReasonMax = 400;
+
+export const rejectDraftQuotationBodyManagerNameMax = 80;
+
+
+
+export const RejectDraftQuotationBody = zod.object({
+  "reason": zod.string().max(rejectDraftQuotationBodyReasonMax).nullish(),
+  "managerName": zod.string().max(rejectDraftQuotationBodyManagerNameMax).nullish()
+})
+
+export const RejectDraftQuotationResponse = zod.object({
+  "id": zod.number().int(),
+  "reference": zod.string(),
+  "companyName": zod.string(),
+  "customerName": zod.string(),
+  "location": zod.string(),
+  "serviceCode": zod.string(),
+  "serviceName": zod.string(),
+  "quantity": zod.number().int(),
+  "unitPrice": zod.number(),
+  "totalPrice": zod.number(),
+  "requestedDate": zod.string(),
+  "appointmentDate": zod.string().nullable(),
+  "status": zod.enum(['draft', 'approved', 'rejected']),
+  "approvedBy": zod.string().nullable(),
+  "approvedAt": zod.string().nullable(),
+  "rejectionReason": zod.string().nullable(),
+  "createdBy": zod.string().nullable(),
+  "message": zod.string().nullable(),
+  "crew": zod.array(zod.string()),
+  "lineItems": zod.array(zod.object({
+  "serviceCode": zod.string(),
+  "serviceName": zod.string(),
+  "quantity": zod.number().int(),
+  "unitPrice": zod.number(),
+  "lineTotal": zod.number()
+})),
+  "riskStatus": zod.union([zod.literal('FEASIBLE'),zod.literal('AT_RISK'),zod.literal(null)]).nullable(),
+  "riskReason": zod.string().nullable(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Dashboard counters, items that need attention and upcoming appointments
+ */
+export const GetDashboardSummaryResponse = zod.object({
+  "referenceDate": zod.string(),
+  "referenceDateLabel": zod.string(),
+  "counts": zod.object({
+  "enquiries": zod.number().int(),
+  "pendingQuotations": zod.number().int(),
+  "approvedQuotations": zod.number().int(),
+  "rejectedQuotations": zod.number().int(),
+  "upcomingAppointments": zod.number().int(),
+  "schedulingConflicts": zod.number().int(),
+  "conflictsDetected": zod.number().int(),
+  "atRiskCommitments": zod.number().int()
+}),
+  "needsAttention": zod.array(zod.object({
+  "kind": zod.enum(['at_risk', 'pending_approval', 'crew_short']),
+  "severity": zod.enum(['danger', 'warning', 'info']),
+  "title": zod.string(),
+  "detail": zod.string(),
+  "quoteId": zod.number().int().nullable(),
+  "reference": zod.string().nullable()
+})),
+  "upcoming": zod.array(zod.object({
+  "quoteId": zod.number().int(),
+  "reference": zod.string(),
+  "customerName": zod.string(),
+  "location": zod.string(),
+  "appointmentDate": zod.string(),
+  "weekday": zod.string(),
+  "serviceSummary": zod.string(),
+  "totalPrice": zod.number(),
+  "crew": zod.array(zod.string()),
+  "riskStatus": zod.union([zod.literal('FEASIBLE'),zod.literal('AT_RISK'),zod.literal(null)]).nullable()
+})),
+  "crewToday": zod.object({
+  "date": zod.string(),
+  "weekday": zod.string(),
+  "technicians": zod.number().int(),
+  "available": zod.number().int(),
+  "onLeave": zod.number().int(),
+  "assigned": zod.number().int()
+})
+})
+
+
+/**
+ * @summary Week board - every technician's leave, jobs and ORO bookings per day
+ */
+export const getStaffScheduleQueryFromRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const getStaffScheduleQueryDaysMax = 14;
+
+
+
+export const GetStaffScheduleQueryParams = zod.object({
+  "from": zod.coerce.string().regex(getStaffScheduleQueryFromRegExp).optional().describe('First day of the board (YYYY-MM-DD). Defaults to the day after the demo reference date.'),
+  "days": zod.coerce.number().int().min(1).max(getStaffScheduleQueryDaysMax).optional().describe('Number of days (1-14, default 7)')
+})
+
+export const GetStaffScheduleResponse = zod.object({
+  "from": zod.string(),
+  "to": zod.string(),
+  "referenceDate": zod.string(),
+  "windowLabel": zod.string(),
+  "days": zod.array(zod.object({
+  "date": zod.string(),
+  "weekday": zod.string(),
+  "workingDay": zod.boolean(),
+  "isReferenceDate": zod.boolean(),
+  "availableInstallers": zod.number().int(),
+  "availableSeniorInstallers": zod.number().int(),
+  "technicians": zod.number().int()
+})),
+  "staff": zod.array(zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "role": zod.string(),
+  "isSenior": zod.boolean(),
+  "canInstall": zod.boolean(),
+  "days": zod.array(zod.object({
+  "date": zod.string(),
+  "status": zod.enum(['available', 'on_leave', 'assigned', 'not_a_technician', 'non_working']),
+  "blocks": zod.array(zod.object({
+  "id": zod.number().int(),
+  "kind": zod.enum(['leave', 'assignment']),
+  "source": zod.enum(['eleave', 'orbyte_work', 'oro_booking']),
+  "title": zod.string(),
+  "reference": zod.string(),
+  "startAt": zod.string(),
+  "endAt": zod.string(),
+  "quoteId": zod.number().int().nullable()
+}))
+}))
+}))
 })
 
 
@@ -471,9 +802,12 @@ export const SimulateEmergencyLeaveResponse = zod.object({
   "totalPrice": zod.number(),
   "requestedDate": zod.string(),
   "appointmentDate": zod.string().nullable(),
-  "status": zod.enum(['draft', 'approved']),
+  "status": zod.enum(['draft', 'approved', 'rejected']),
   "approvedBy": zod.string().nullable(),
   "approvedAt": zod.string().nullable(),
+  "rejectionReason": zod.string().nullable(),
+  "createdBy": zod.string().nullable(),
+  "message": zod.string().nullable(),
   "crew": zod.array(zod.string()),
   "lineItems": zod.array(zod.object({
   "serviceCode": zod.string(),
@@ -549,9 +883,12 @@ export const ListCommitmentsResponseItem = zod.object({
   "totalPrice": zod.number(),
   "requestedDate": zod.string(),
   "appointmentDate": zod.string().nullable(),
-  "status": zod.enum(['draft', 'approved']),
+  "status": zod.enum(['draft', 'approved', 'rejected']),
   "approvedBy": zod.string().nullable(),
   "approvedAt": zod.string().nullable(),
+  "rejectionReason": zod.string().nullable(),
+  "createdBy": zod.string().nullable(),
+  "message": zod.string().nullable(),
   "crew": zod.array(zod.string()),
   "lineItems": zod.array(zod.object({
   "serviceCode": zod.string(),
@@ -627,9 +964,12 @@ export const RecoverCommitmentResponse = zod.object({
   "totalPrice": zod.number(),
   "requestedDate": zod.string(),
   "appointmentDate": zod.string().nullable(),
-  "status": zod.enum(['draft', 'approved']),
+  "status": zod.enum(['draft', 'approved', 'rejected']),
   "approvedBy": zod.string().nullable(),
   "approvedAt": zod.string().nullable(),
+  "rejectionReason": zod.string().nullable(),
+  "createdBy": zod.string().nullable(),
+  "message": zod.string().nullable(),
   "crew": zod.array(zod.string()),
   "lineItems": zod.array(zod.object({
   "serviceCode": zod.string(),

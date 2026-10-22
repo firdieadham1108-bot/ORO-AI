@@ -372,3 +372,133 @@ test("Wallet - manager approvals and recovery swaps cost 0.10 Orbyte Credits; re
   assert.equal(reset.balanceFormatted, "25.00");
   assert.equal(reset.transactionsCharged, 0);
 });
+
+// ---------- Sprint 9: Dashboard, Staff Schedule and the sales -> manager draft approval flow ----------
+
+test("Dashboard - counters are calculated from the database and move with the data", async () => {
+  const empty = (await call("GET", "/dashboard/summary")).body;
+  assert.equal(empty.referenceDate, "2026-10-21");
+  assert.deepEqual(empty.counts, {
+    enquiries: 0, pendingQuotations: 0, approvedQuotations: 0, rejectedQuotations: 0,
+    upcomingAppointments: 0, schedulingConflicts: 0, conflictsDetected: 0, atRiskCommitments: 0,
+  });
+  assert.equal(empty.crewToday.technicians, 4);
+  assert.equal(empty.crewToday.available, 4, "all four technicians are free on the reference date");
+  assert.deepEqual(empty.upcoming, []);
+
+  await enquiry(FLAGSHIP); // Friday conflict detected while analysing
+  await call("POST", "/approvals", MONDAY_JOB); // approved for Monday
+  const draft = await call("POST", "/quotes", { customerName: "Draft Customer", serviceCode: "standard_service", quantity: 2, requestedDate: MONDAY, location: "Cheras", requestedBy: "Mei" });
+  assert.equal(draft.status, 201);
+
+  const after = (await call("GET", "/dashboard/summary")).body;
+  assert.equal(after.counts.enquiries, 1);
+  assert.equal(after.counts.pendingQuotations, 1);
+  assert.equal(after.counts.approvedQuotations, 1);
+  assert.equal(after.counts.upcomingAppointments, 1);
+  assert.equal(after.counts.conflictsDetected, 1);
+  assert.equal(after.counts.schedulingConflicts, 1);
+  assert.equal(after.upcoming[0].reference, "ORO-1023");
+  assert.deepEqual(after.upcoming[0].crew, ["Bala (senior)", "Mei"]);
+  assert.ok(after.needsAttention.some((n) => n.kind === "pending_approval" && n.reference === draft.body.reference), "draft shows under needs attention");
+
+  await call("POST", "/orbyte-sim/emergency-leave"); // Bala's Monday leave puts ORO-1023 at risk
+  const risky = (await call("GET", "/dashboard/summary")).body;
+  assert.equal(risky.counts.atRiskCommitments, 1);
+  assert.equal(risky.counts.schedulingConflicts, 2);
+  assert.equal(risky.needsAttention[0].kind, "at_risk", "at-risk jobs come first");
+  assert.match(risky.needsAttention[0].detail, /Chong/);
+});
+
+test("Staff Schedule - week board shows leave, Orbyte jobs and ORO bookings per technician per day", async () => {
+  const board = (await call("GET", "/staff/schedule?from=2026-10-22&days=7")).body;
+  assert.equal(board.from, "2026-10-22");
+  assert.equal(board.to, "2026-10-28");
+  assert.equal(board.days.length, 7);
+  assert.equal(board.days[0].weekday, "Thursday");
+  assert.equal(board.days[1].availableInstallers, 0, "nobody is free on Friday 23 Oct");
+  assert.equal(board.days[3].workingDay, false, "Sunday is not a working day");
+
+  const ali = board.staff.find((s) => s.name === "Ali");
+  const friday = ali.days.find((d) => d.date === FRIDAY);
+  assert.equal(friday.status, "on_leave");
+  assert.equal(friday.blocks[0].source, "eleave");
+  assert.equal(friday.blocks[0].reference, "SIM-ELEAVE-0142");
+  const bala = board.staff.find((s) => s.name === "Bala");
+  assert.equal(bala.days.find((d) => d.date === FRIDAY).blocks[0].source, "orbyte_work");
+  const faizal = board.staff.find((s) => s.name === "Faizal");
+  assert.equal(faizal.days[0].status, "not_a_technician");
+
+  // An ORO approval appears on the board as a booking with its quotation number.
+  const approved = (await call("POST", "/approvals", MONDAY_JOB)).body;
+  const updated = (await call("GET", "/staff/schedule?from=2026-10-22&days=7")).body;
+  const balaMonday = updated.staff.find((s) => s.name === "Bala").days.find((d) => d.date === MONDAY);
+  assert.equal(balaMonday.status, "assigned");
+  assert.equal(balaMonday.blocks[0].source, "oro_booking");
+  assert.equal(balaMonday.blocks[0].reference, approved.reference);
+  assert.equal(balaMonday.blocks[0].quoteId, approved.id);
+  assert.equal(updated.days.find((d) => d.date === MONDAY).availableInstallers, 2);
+
+  // Defaults and validation.
+  const defaults = (await call("GET", "/staff/schedule")).body;
+  assert.equal(defaults.from, "2026-10-22");
+  assert.equal(defaults.days.length, 7);
+  assert.equal((await call("GET", "/staff/schedule?from=2026-13-01")).status, 400);
+  assert.equal((await call("GET", "/staff/schedule?days=40")).status, 400);
+});
+
+test("Approvals - sales sends a draft, manager sees the options, approves it with the same safety checks", async () => {
+  // Sales staff (Mei) cannot approve, so the enquiry is saved as a draft for the manager.
+  const draft = (await call("POST", "/quotes", {
+    customerName: "Cheras Office (demo customer)", serviceCode: "install_1_5hp", quantity: 6,
+    requestedDate: FRIDAY, location: "Cheras", message: FLAGSHIP, requestedBy: "Mei",
+    extraItems: [{ serviceCode: "standard_service", quantity: 1 }],
+  })).body;
+  assert.equal(draft.status, "draft");
+  assert.equal(draft.reference, "ORO-1023");
+  assert.equal(draft.createdBy, "Mei");
+  assert.equal(draft.totalPrice, 1140 + 80, "extra line priced by the server");
+
+  // Manager Approval page: the requested Friday is re-checked and Monday is offered instead.
+  const options = (await call("GET", `/quotes/${draft.id}/schedule-options`)).body;
+  assert.equal(options.requested.verdict, "not_feasible");
+  assert.equal(options.alternatives[0].date, MONDAY);
+  assert.deepEqual(options.alternatives[0].crew.map((c) => c.name), ["Bala", "Mei"]);
+
+  // Sales cannot approve; the manager cannot approve the conflicting Friday; nothing was charged.
+  assert.equal((await call("POST", `/quotes/${draft.id}/approve`, { appointmentDate: MONDAY, approverName: "Mei" })).status, 403);
+  assert.equal((await call("POST", `/quotes/${draft.id}/approve`, { appointmentDate: FRIDAY, approverName: "Faizal" })).status, 409);
+  assert.equal((await call("GET", "/orbyte-sim/wallet")).body.balanceFormatted, "25.00");
+
+  // Manager approves Monday: same row, now approved, crew reserved, credits charged.
+  const approved = await call("POST", `/quotes/${draft.id}/approve`, { appointmentDate: MONDAY, approverName: "Faizal" });
+  assert.equal(approved.status, 200);
+  assert.equal(approved.body.id, draft.id);
+  assert.equal(approved.body.reference, "ORO-1023");
+  assert.equal(approved.body.status, "approved");
+  assert.equal(approved.body.appointmentDate, MONDAY);
+  assert.deepEqual(approved.body.crew, ["Bala (senior)", "Mei"]);
+  assert.equal((await call("GET", "/quotes")).body.length, 1, "no duplicate quotation row");
+  const monday = await availability(MONDAY);
+  for (const name of ["Bala", "Mei"]) assert.equal(monday.staff.find((s) => s.name === name).status, "assigned");
+  assert.equal((await call("GET", "/orbyte-sim/wallet")).body.balanceFormatted, "24.90");
+  assert.ok((await activityActions()).includes("quotation_approved"));
+
+  // Approving twice is refused; the dashboard no longer lists it as pending.
+  assert.equal((await call("POST", `/quotes/${draft.id}/approve`, { appointmentDate: MONDAY, approverName: "Faizal" })).status, 409);
+  assert.equal((await call("GET", "/dashboard/summary")).body.counts.pendingQuotations, 0);
+});
+
+test("Approvals - manager can decline a draft; declined drafts cannot be approved later", async () => {
+  const draft = (await call("POST", "/quotes", { customerName: "Decline Me", serviceCode: "chemical_wash", quantity: 1, requestedDate: MONDAY, location: "Cheras", requestedBy: "Mei" })).body;
+  assert.equal((await call("POST", `/quotes/${draft.id}/reject`, { reason: "Customer cancelled", managerName: "Mei" })).status, 403);
+  const rejected = await call("POST", `/quotes/${draft.id}/reject`, { reason: "Customer cancelled", managerName: "Faizal" });
+  assert.equal(rejected.status, 200);
+  assert.equal(rejected.body.status, "rejected");
+  assert.equal(rejected.body.rejectionReason, "Customer cancelled");
+  assert.equal((await call("POST", `/quotes/${draft.id}/approve`, { appointmentDate: MONDAY, approverName: "Faizal" })).status, 409);
+  assert.equal((await call("GET", "/dashboard/summary")).body.counts.rejectedQuotations, 1);
+  const entry = (await call("GET", "/activity")).body.find((a) => a.action === "quotation_rejected");
+  assert.match(entry.description, /Customer cancelled/);
+  assert.equal((await call("GET", "/quotes/999/schedule-options")).status, 404);
+});

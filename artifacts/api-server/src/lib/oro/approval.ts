@@ -1,9 +1,9 @@
 // Manager approval: re-check the chosen date against the latest records, then save an approved quotation.
-import { inTransaction, logActivity } from "./db";
+import { db, inTransaction, logActivity } from "./db";
 import { MockOrbyteApprovalAdapter } from "./orbyte-adapters";
 import { formatLongDate, isValidDateString } from "./dates";
-import { insertQuote, type QuoteRow } from "./quotes";
-import { checkSchedule } from "./scheduling";
+import { getQuoteRow, insertQuote, lineCodesOf, markDraftApproved, toQuote, type QuoteRow } from "./quotes";
+import { checkSchedule, findAlternatives } from "./scheduling";
 import { findService, type ServiceItem } from "./services";
 import { chargeTransaction } from "./wallet";
 
@@ -25,7 +25,7 @@ export interface ApprovalRequest {
 
 export type ApprovalOutcome =
   | { ok: true; quote: QuoteRow }
-  | { ok: false; status: 400 | 403 | 409; error: string };
+  | { ok: false; status: 400 | 403 | 404 | 409; error: string };
 
 export function approveQuotation(req: ApprovalRequest): ApprovalOutcome {
   const service = findService(req.serviceCode);
@@ -59,9 +59,7 @@ function approveChecked(
   extraLines: Array<{ service: ServiceItem; quantity: number }>,
 ): ApprovalOutcome {
   // The most demanding line (installation, if any) sets the crew rule for the visit.
-  const ruleCode =
-    [service, ...extraLines.map((l) => l.service)].find((s) => s.code.startsWith("install_"))?.code ?? service.code;
-  const check = checkSchedule(req.appointmentDate, ruleCode);
+  const check = checkSchedule(req.appointmentDate, ruleCodeFor([service, ...extraLines.map((l) => l.service)].map((s) => s.code)));
   if (check.verdict !== "feasible") {
     logActivity(
       "approval_blocked",
@@ -91,4 +89,80 @@ function approveChecked(
   );
   chargeTransaction(`approving quotation ${quote.reference}`);
   return { ok: true, quote };
+}
+
+/** The crew rule for a visit comes from its most demanding line (an installation, if there is one). */
+export function ruleCodeFor(codes: string[]): string {
+  return codes.find((c) => c.startsWith("install_")) ?? codes[0] ?? "";
+}
+
+export type ScheduleOptionsOutcome =
+  | { ok: true; options: { quote: ReturnType<typeof toQuote>; requested: ReturnType<typeof checkSchedule>; alternatives: ReturnType<typeof checkSchedule>[] } }
+  | { ok: false; status: 404; error: string };
+
+/** Manager Approval page: re-check a quotation's requested date now and list feasible alternatives. */
+export function getQuoteScheduleOptions(quoteId: number): ScheduleOptionsOutcome {
+  const row = getQuoteRow(quoteId);
+  if (!row) return { ok: false, status: 404, error: "Quotation not found." };
+  const rule = ruleCodeFor(lineCodesOf(row));
+  const requested = checkSchedule(row.requested_date, rule);
+  const alternatives = requested.verdict === "feasible" ? [] : findAlternatives(row.requested_date, rule);
+  return { ok: true, options: { quote: toQuote(row), requested, alternatives } };
+}
+
+/**
+ * Approve a draft that sales staff sent for approval. Same guarantees as approveQuotation:
+ * the date is re-checked from the database and the crew reserved in the same transaction.
+ */
+export function approveDraft(quoteId: number, input: { appointmentDate: string; approverName?: string | null }): ApprovalOutcome {
+  if (!isValidDateString(input.appointmentDate)) {
+    return { ok: false, status: 400, error: "The appointment date is not a valid calendar date." };
+  }
+  if (input.approverName != null && !MockOrbyteApprovalAdapter.canApprove(input.approverName)) {
+    logActivity("approval_denied", `${input.approverName} tried to approve a quotation but does not have the manager role.`, input.approverName, "warning");
+    return { ok: false, status: 403, error: "Requires Manager (Faizal) approval. Switch the demo role to Manager to approve." };
+  }
+  return inTransaction((): ApprovalOutcome => {
+    const row = getQuoteRow(quoteId);
+    if (!row) return { ok: false, status: 404, error: "Quotation not found." };
+    if (row.status !== "draft") {
+      return { ok: false, status: 409, error: `Quotation ${row.reference} is already ${row.status}.` };
+    }
+    const check = checkSchedule(input.appointmentDate, ruleCodeFor(lineCodesOf(row)));
+    if (check.verdict !== "feasible") {
+      logActivity(
+        "approval_blocked",
+        `Approval of ${row.reference} for ${formatLongDate(input.appointmentDate)} was blocked. ${check.explanation}`,
+        MANAGER,
+        "warning",
+      );
+      return { ok: false, status: 409, error: `Cannot approve this date. ${check.explanation}` };
+    }
+    const quote = markDraftApproved(row, { appointmentDate: input.appointmentDate, approvedBy: MANAGER, crew: check.crew });
+    chargeTransaction(`approving quotation ${quote.reference}`);
+    return { ok: true, quote };
+  });
+}
+
+/** Manager declines a draft. Nothing is reserved; the decision is written to the activity log. */
+export function rejectDraft(quoteId: number, input: { reason?: string | null; managerName?: string | null }): ApprovalOutcome {
+  if (input.managerName != null && !MockOrbyteApprovalAdapter.canApprove(input.managerName)) {
+    return { ok: false, status: 403, error: "Requires Manager (Faizal) approval. Switch the demo role to Manager to decline a quotation." };
+  }
+  return inTransaction((): ApprovalOutcome => {
+    const row = getQuoteRow(quoteId);
+    if (!row) return { ok: false, status: 404, error: "Quotation not found." };
+    if (row.status !== "draft") {
+      return { ok: false, status: 409, error: `Quotation ${row.reference} is already ${row.status}.` };
+    }
+    const reason = input.reason?.trim() || "No reason given";
+    db.prepare("UPDATE quotes SET status = 'rejected', rejection_reason = ? WHERE id = ?").run(reason, row.id);
+    logActivity(
+      "quotation_rejected",
+      `${MANAGER} declined draft quotation ${row.reference} for ${row.customer_name} (${row.location}). Reason: ${reason}.`,
+      MANAGER,
+      "warning",
+    );
+    return { ok: true, quote: getQuoteRow(row.id)! };
+  });
 }

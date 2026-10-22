@@ -251,6 +251,176 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /quotes/{id}/schedule-options:
+    get:
+      operationId: getQuoteScheduleOptions
+      tags: [oro]
+      summary: Re-check a draft quotation's requested date and find alternatives (for manager approval)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Requested-date check and feasible alternatives, calculated from the latest records
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuoteScheduleOptions"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /quotes/{id}/approve:
+    post:
+      operationId: approveDraftQuotation
+      tags: [oro]
+      summary: Manager approves an existing draft quotation for a chosen appointment date
+      description: >
+        Same rules as POST /approvals, applied to a draft that sales staff sent for approval.
+        Re-checks the date, reserves the crew and marks the draft approved. 409 if the date is
+        not feasible or the quotation is no longer a draft.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DraftApprovalInput"
+      responses:
+        "200":
+          description: Approved quotation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quote"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: The demo role is not the manager
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: The date is not feasible, or the quotation is not a draft
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /quotes/{id}/reject:
+    post:
+      operationId: rejectDraftQuotation
+      tags: [oro]
+      summary: Manager declines a draft quotation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DraftRejectionInput"
+      responses:
+        "200":
+          description: Rejected quotation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quote"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: The demo role is not the manager
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: The quotation is not a draft
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [oro]
+      summary: Dashboard counters, items that need attention and upcoming appointments
+      responses:
+        "200":
+          description: Live counts calculated from the database
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+  /staff/schedule:
+    get:
+      operationId: getStaffSchedule
+      tags: [oro]
+      summary: Week board - every technician's leave, jobs and ORO bookings per day
+      parameters:
+        - name: from
+          in: query
+          required: false
+          description: First day of the board (YYYY-MM-DD). Defaults to the day after the demo reference date.
+          schema:
+            type: string
+            pattern: "^\\d{4}-\\d{2}-\\d{2}$"
+        - name: days
+          in: query
+          required: false
+          description: Number of days (1-14, default 7)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 14
+      responses:
+        "200":
+          description: Schedule board
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffSchedule"
+        "400":
+          description: Invalid date or range
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /orbyte-sim/emergency-leave:
     post:
       operationId: simulateEmergencyLeave
@@ -591,7 +761,41 @@ components:
         requestedDate: { type: string, pattern: "^\\d{4}-\\d{2}-\\d{2}$" }
         location: { type: string, minLength: 1, maxLength: 240 }
         message: { type: ["string", "null"], maxLength: 2000 }
+        extraItems:
+          type: ["array", "null"]
+          maxItems: 5
+          items:
+            type: object
+            properties:
+              serviceCode: { type: string }
+              quantity: { type: integer, minimum: 1, maximum: 500 }
+            required: [serviceCode, quantity]
+        requestedBy: { type: ["string", "null"], maxLength: 80 }
       required: [customerName, serviceCode, quantity, requestedDate, location]
+    DraftApprovalInput:
+      type: object
+      properties:
+        appointmentDate: { type: string, pattern: "^\\d{4}-\\d{2}-\\d{2}$" }
+        approverName: { type: ["string", "null"], maxLength: 80 }
+      required: [appointmentDate]
+    DraftRejectionInput:
+      type: object
+      properties:
+        reason: { type: ["string", "null"], maxLength: 400 }
+        managerName: { type: ["string", "null"], maxLength: 80 }
+      required: []
+    QuoteScheduleOptions:
+      type: object
+      properties:
+        quote:
+          $ref: "#/components/schemas/Quote"
+        requested:
+          $ref: "#/components/schemas/ScheduleCheck"
+        alternatives:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScheduleCheck"
+      required: [quote, requested, alternatives]
     ApprovalInput:
       type: object
       properties:
@@ -628,9 +832,12 @@ components:
         totalPrice: { type: number }
         requestedDate: { type: string }
         appointmentDate: { type: ["string", "null"] }
-        status: { type: string, enum: [draft, approved] }
+        status: { type: string, enum: [draft, approved, rejected] }
         approvedBy: { type: ["string", "null"] }
         approvedAt: { type: ["string", "null"] }
+        rejectionReason: { type: ["string", "null"] }
+        createdBy: { type: ["string", "null"] }
+        message: { type: ["string", "null"] }
         crew:
           type: array
           items: { type: string }
@@ -641,7 +848,7 @@ components:
         riskStatus: { type: ["string", "null"], enum: [FEASIBLE, AT_RISK, null] }
         riskReason: { type: ["string", "null"] }
         createdAt: { type: string }
-      required: [id, reference, companyName, customerName, location, serviceCode, serviceName, quantity, unitPrice, totalPrice, requestedDate, appointmentDate, status, approvedBy, approvedAt, crew, lineItems, riskStatus, riskReason, createdAt]
+      required: [id, reference, companyName, customerName, location, serviceCode, serviceName, quantity, unitPrice, totalPrice, requestedDate, appointmentDate, status, approvedBy, approvedAt, rejectionReason, createdBy, message, crew, lineItems, riskStatus, riskReason, createdAt]
     RejectedCandidate:
       type: object
       properties:
@@ -729,6 +936,134 @@ components:
         transactionsCharged: { type: integer }
         label: { type: string }
       required: [balance, balanceFormatted, startingBalance, chargePerTransaction, transactionsCharged, label]
+    DashboardCounts:
+      type: object
+      properties:
+        enquiries: { type: integer }
+        pendingQuotations: { type: integer }
+        approvedQuotations: { type: integer }
+        rejectedQuotations: { type: integer }
+        upcomingAppointments: { type: integer }
+        schedulingConflicts: { type: integer }
+        conflictsDetected: { type: integer }
+        atRiskCommitments: { type: integer }
+      required: [enquiries, pendingQuotations, approvedQuotations, rejectedQuotations, upcomingAppointments, schedulingConflicts, conflictsDetected, atRiskCommitments]
+    AttentionItem:
+      type: object
+      properties:
+        kind: { type: string, enum: [at_risk, pending_approval, crew_short] }
+        severity: { type: string, enum: [danger, warning, info] }
+        title: { type: string }
+        detail: { type: string }
+        quoteId: { type: ["integer", "null"] }
+        reference: { type: ["string", "null"] }
+      required: [kind, severity, title, detail, quoteId, reference]
+    UpcomingAppointment:
+      type: object
+      properties:
+        quoteId: { type: integer }
+        reference: { type: string }
+        customerName: { type: string }
+        location: { type: string }
+        appointmentDate: { type: string }
+        weekday: { type: string }
+        serviceSummary: { type: string }
+        totalPrice: { type: number }
+        crew:
+          type: array
+          items: { type: string }
+        riskStatus: { type: ["string", "null"], enum: [FEASIBLE, AT_RISK, null] }
+      required: [quoteId, reference, customerName, location, appointmentDate, weekday, serviceSummary, totalPrice, crew, riskStatus]
+    CrewToday:
+      type: object
+      properties:
+        date: { type: string }
+        weekday: { type: string }
+        technicians: { type: integer }
+        available: { type: integer }
+        onLeave: { type: integer }
+        assigned: { type: integer }
+      required: [date, weekday, technicians, available, onLeave, assigned]
+    DashboardSummary:
+      type: object
+      properties:
+        referenceDate: { type: string }
+        referenceDateLabel: { type: string }
+        counts:
+          $ref: "#/components/schemas/DashboardCounts"
+        needsAttention:
+          type: array
+          items:
+            $ref: "#/components/schemas/AttentionItem"
+        upcoming:
+          type: array
+          items:
+            $ref: "#/components/schemas/UpcomingAppointment"
+        crewToday:
+          $ref: "#/components/schemas/CrewToday"
+      required: [referenceDate, referenceDateLabel, counts, needsAttention, upcoming, crewToday]
+    ScheduleBlock:
+      type: object
+      properties:
+        id: { type: integer }
+        kind: { type: string, enum: [leave, assignment] }
+        source: { type: string, enum: [eleave, orbyte_work, oro_booking] }
+        title: { type: string }
+        reference: { type: string }
+        startAt: { type: string }
+        endAt: { type: string }
+        quoteId: { type: ["integer", "null"] }
+      required: [id, kind, source, title, reference, startAt, endAt, quoteId]
+    StaffScheduleDay:
+      type: object
+      properties:
+        date: { type: string }
+        status: { type: string, enum: [available, on_leave, assigned, not_a_technician, non_working] }
+        blocks:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScheduleBlock"
+      required: [date, status, blocks]
+    StaffScheduleRow:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        role: { type: string }
+        isSenior: { type: boolean }
+        canInstall: { type: boolean }
+        days:
+          type: array
+          items:
+            $ref: "#/components/schemas/StaffScheduleDay"
+      required: [id, name, role, isSenior, canInstall, days]
+    ScheduleDayHeader:
+      type: object
+      properties:
+        date: { type: string }
+        weekday: { type: string }
+        workingDay: { type: boolean }
+        isReferenceDate: { type: boolean }
+        availableInstallers: { type: integer }
+        availableSeniorInstallers: { type: integer }
+        technicians: { type: integer }
+      required: [date, weekday, workingDay, isReferenceDate, availableInstallers, availableSeniorInstallers, technicians]
+    StaffSchedule:
+      type: object
+      properties:
+        from: { type: string }
+        to: { type: string }
+        referenceDate: { type: string }
+        windowLabel: { type: string }
+        days:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScheduleDayHeader"
+        staff:
+          type: array
+          items:
+            $ref: "#/components/schemas/StaffScheduleRow"
+      required: [from, to, referenceDate, windowLabel, days, staff]
     ResetResult:
       type: object
       properties:

@@ -49,6 +49,8 @@ CREATE TABLE IF NOT EXISTS quotes (
   risk_reason    TEXT,
   line_items     TEXT,             -- JSON list of {code, quantity, unitPriceSen}; main columns hold the first line
   message        TEXT,
+  created_by     TEXT,             -- who created the draft (sales staff) or approved straight away (manager)
+  rejection_reason TEXT,           -- set when the manager declines a draft
   created_at     TEXT NOT NULL
 );
 
@@ -74,7 +76,7 @@ function upgradeOlderDatabase(database: DatabaseSync): void {
     const update = database.prepare("UPDATE staff SET dispatch_order = ? WHERE id = ? AND name = ?");
     for (const s of SEED_STAFF) update.run(s.dispatchOrder, s.id, s.name);
   }
-  for (const column of ["appointment_date", "approved_by", "approved_at", "crew", "risk_status", "risk_reason", "line_items"]) {
+  for (const column of ["appointment_date", "approved_by", "approved_at", "crew", "risk_status", "risk_reason", "line_items", "created_by", "rejection_reason"]) {
     if (!hasColumn(database, "quotes", column)) database.exec(`ALTER TABLE quotes ADD COLUMN ${column} TEXT`);
   }
   if (!hasColumn(database, "capacity_blocks", "quote_id")) {

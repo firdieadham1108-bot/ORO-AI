@@ -28,6 +28,12 @@ export interface Quote {
   approvedBy: string | null;
   /** @nullable */
   approvedAt: string | null;
+  /** @nullable */
+  rejectionReason: string | null;
+  /** @nullable */
+  createdBy: string | null;
+  /** @nullable */
+  message: string | null;
   crew: string[];
   lineItems: PricingLine[];
   /** @nullable */

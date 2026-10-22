@@ -22,6 +22,7 @@ export function getStaffAvailability(date: string) {
         startAt: b.startAt,
         endAt: b.endAt,
         reference: b.reference,
+        quoteId: b.quoteId, // set when ORO AI reserved this person for an approved quotation
       }));
 
     let status: AvailabilityStatus;

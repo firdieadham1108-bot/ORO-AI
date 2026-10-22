@@ -1,8 +1,9 @@
 import { useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useProcessEnquiry, useApproveQuotation, useListActivity, useListCommitments, getListActivityQueryKey, getListCommitmentsQueryKey, getGetOrbyteWalletQueryKey } from "@workspace/api-client-react";
+import { Link } from "wouter";
+import { useProcessEnquiry, useApproveQuotation, useCreateQuote, useListActivity, useListCommitments, getListActivityQueryKey, getListCommitmentsQueryKey, getGetOrbyteWalletQueryKey, getListQuotesQueryKey, getGetDashboardSummaryQueryKey } from "@workspace/api-client-react";
 import type { EnquiryResult, ScheduleCheck, Quote, Commitment, TranscriptionResult } from "@workspace/api-client-react";
-import { Sparkles, Loader2, AlertTriangle, ShieldCheck, FileText, RotateCcw, Inbox, CheckCircle2, Lock, Mic, TimerOff } from "lucide-react";
+import { Sparkles, Loader2, AlertTriangle, ShieldCheck, FileText, RotateCcw, Inbox, CheckCircle2, Lock, Mic, TimerOff, Send, Info } from "lucide-react";
 import { ErrorBox } from "@/components/shell";
 import { RiskAlerts, SimulationBar } from "@/components/risk";
 import { PrintableQuoteModal, QuoteDocument, type QuoteDocData } from "@/components/quote-document";
@@ -11,6 +12,7 @@ import { VoiceInput } from "@/components/voice-input";
 import { QuoteTerms, useHoldTimer, HOLD_SECONDS } from "@/components/quote-terms";
 import { useRole } from "@/lib/role";
 import { rm, longDate, myTime } from "@/lib/util";
+import { quoteToDoc } from "@/lib/quote-doc";
 
 const COMPANY = "CoolAir Services Sdn Bhd";
 
@@ -56,24 +58,6 @@ const KIND_LABEL: Record<string, string> = {
   chemical_wash: "Chemical wash",
 };
 
-function quoteToDoc(x: Quote): QuoteDocData {
-  return {
-    companyName: x.companyName,
-    reference: x.reference,
-    status: x.riskStatus === "AT_RISK" ? "at_risk" : x.status === "approved" ? "approved" : "draft",
-    customerName: x.customerName,
-    location: x.location,
-    lines: x.lineItems,
-    totalPrice: x.totalPrice,
-    requestedDate: x.requestedDate,
-    promisedDate: x.appointmentDate,
-    crew: x.crew,
-    crewIsProposal: false,
-    approvedBy: x.approvedBy,
-    approvedAt: x.approvedAt,
-  };
-}
-
 /** Draft document from an analysed enquiry (before approval). */
 function draftDoc(result: EnquiryResult, customer: string): QuoteDocData | null {
   const p = result.pricing;
@@ -102,11 +86,14 @@ export default function Workspace() {
   const { name: actorName } = useRole();
   const enquiry = useProcessEnquiry();
   const approve = useApproveQuotation();
+  const createDraft = useCreateQuote();
   const [customer, setCustomer] = useState(SCENARIOS[0]!.customer);
   const [message, setMessage] = useState("");
   const [result, setResult] = useState<EnquiryResult | null>(null);
   const [sentMessage, setSentMessage] = useState("");
   const [quote, setQuote] = useState<Quote | null>(null);
+  // Sales staff cannot approve: they send the priced enquiry to the manager as a draft quotation instead.
+  const [draft, setDraft] = useState<Quote | null>(null);
   const [approvingDate, setApprovingDate] = useState<string | null>(null);
   const [recovered, setRecovered] = useState<Commitment | null>(null);
   const [printDoc, setPrintDoc] = useState<QuoteDocData | null>(null);
@@ -120,7 +107,9 @@ export default function Workspace() {
 
   const analyse = (text: string = message) => {
     approve.reset();
+    createDraft.reset();
     setQuote(null);
+    setDraft(null);
     enquiry.mutate({ data: { message: text } }, {
       onSuccess: (r) => {
         setResult(r);
@@ -161,7 +150,24 @@ export default function Workspace() {
       onSettled: () => { setApprovingDate(null); qc.invalidateQueries({ queryKey: getListActivityQueryKey() }); },
     });
   };
-  const startOver = () => { setResult(null); setQuote(null); setMessage(""); setVoice(null); enquiry.reset(); approve.reset(); };
+  const sendForApproval = () => {
+    const p = result?.pricing;
+    if (!p || !result.analysis.requestedDate || !result.analysis.location) return;
+    const primaryIndex = p.lines.findIndex((l) => l.serviceCode === p.serviceCode);
+    createDraft.mutate({ data: {
+      customerName: customer.trim(), serviceCode: p.serviceCode, quantity: p.quantity,
+      extraItems: p.lines.filter((_, i) => i !== primaryIndex).map((l) => ({ serviceCode: l.serviceCode, quantity: l.quantity })),
+      requestedDate: result.analysis.requestedDate, location: result.analysis.location, message: sentMessage, requestedBy: actorName,
+    } }, {
+      onSuccess: (q) => {
+        setDraft(q);
+        qc.invalidateQueries({ queryKey: getListQuotesQueryKey() });
+        qc.invalidateQueries({ queryKey: getGetDashboardSummaryQueryKey() });
+      },
+      onSettled: () => qc.invalidateQueries({ queryKey: getListActivityQueryKey() }),
+    });
+  };
+  const startOver = () => { setResult(null); setQuote(null); setDraft(null); setMessage(""); setVoice(null); enquiry.reset(); approve.reset(); createDraft.reset(); };
 
   return (
     <div className="page">
@@ -185,7 +191,7 @@ export default function Workspace() {
                   <button
                     key={i}
                     className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
-                      message === s.message ? "border-[#2f6e52] bg-[#e8f2e9] text-[#2f6e52]" : "border-[#ded9ce] bg-[#faf9f4] text-[#4c5a5f] hover:bg-[#f0ede4]"
+                      message === s.message ? "border-[#0F1E33] bg-[#0F1E33] text-[#F3EBD7]" : "border-[#E4E2DC] bg-[#FFFFFF] text-[#1E242B] hover:border-[#B99545] hover:bg-[#F3EBD7]"
                     }`}
                     onClick={() => { setMessage(s.message); setCustomer(s.customer); setVoice(null); }}
                     data-testid={`button-scenario-${i + 1}`}
@@ -227,8 +233,11 @@ export default function Workspace() {
               onApprove={doApprove}
               onViewDraft={() => { const d = draftDoc(result, customer); if (d) setPrintDoc(d); }}
               approvingDate={approvingDate}
-              error={approve.isError ? approve.error : null}
+              error={approve.isError ? approve.error : createDraft.isError ? createDraft.error : null}
               canApprove={!!customer.trim()}
+              onSendForApproval={sendForApproval}
+              sendingDraft={createDraft.isPending}
+              draft={draft}
             />
           ) : (
             <div className="panel">
@@ -266,10 +275,12 @@ function VoiceTranscriptNotice({ voice, edited }: { voice: TranscriptionResult; 
   );
 }
 
-function ApprovalCard({ result, onApprove, onReverify, reverifying, onViewDraft, approvingDate, error, canApprove }: {
+function ApprovalCard({ result, onApprove, onReverify, reverifying, onViewDraft, approvingDate, error, canApprove, onSendForApproval, sendingDraft, draft }: {
   result: EnquiryResult; onApprove: (o: ScheduleCheck) => void; onReverify: () => void; reverifying: boolean;
   onViewDraft: () => void; approvingDate: string | null; error: unknown; canApprove: boolean;
+  onSendForApproval: () => void; sendingDraft: boolean; draft: Quote | null;
 }) {
+  const { isManager } = useRole();
   const st = STATUS[result.status] ?? STATUS.needs_verification!;
   const a = result.analysis;
   const p = result.pricing;
@@ -285,7 +296,10 @@ function ApprovalCard({ result, onApprove, onReverify, reverifying, onViewDraft,
         <div><div className="eyebrow">AGUI Approval Card</div><h2 className="text-[18px] font-bold" style={{ fontFamily: "Manrope" }}>Review and approve</h2></div>
         <span className={`badge ${st.cls}`} data-testid="status-result">{st.label}</span>
       </div>
-      <p className="text-[13px] text-[#53605f] mb-4" data-testid="text-summary">{result.summary}</p>
+      <p className="text-[13px] text-[#53605f] mb-2" data-testid="text-summary">{result.summary}</p>
+      <p className="flex items-center gap-1.5 text-[11px] text-[#7b857f] mb-4" data-testid="badge-extraction-mode">
+        <Info size={13} /> Demo extraction: rule-based parser (no AI model connected). Prices and crew checks come from the database.
+      </p>
 
       {result.status === "needs_clarification" && (
         <div className="notice warn mb-4" data-testid="list-missing">
@@ -300,7 +314,7 @@ function ApprovalCard({ result, onApprove, onReverify, reverifying, onViewDraft,
 
       <LineItems result={result} />
 
-      <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-[13px] rounded-lg bg-[#f3f1e9] border border-[#e5e0d6] p-4 mt-3">
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-[13px] rounded-lg bg-[#F6F5F2] border border-[#E4E2DC] p-4 mt-3">
         <Kv k="Requested date" v={a.requestedDate ? longDate(a.requestedDate) : null} />
         <Kv k="Location" v={a.location} />
       </dl>
@@ -330,6 +344,22 @@ function ApprovalCard({ result, onApprove, onReverify, reverifying, onViewDraft,
       {showOptions && (
         <p className="flex items-center gap-2 mt-3 text-[11px] text-[#7b857f]"><ShieldCheck size={14} /> Manager action. Availability is re-checked by the server at the moment of approval.</p>
       )}
+      {showOptions && p && a.location && !isManager && (
+        draft ? (
+          <div className="notice success mt-3" data-testid="notice-draft-sent">
+            <CheckCircle2 />
+            <div>
+              <strong>Draft {draft.reference} sent to Faizal (Manager) for approval.</strong>
+              <div className="text-[11px] mt-0.5">It now shows under Manager Approval and on the Dashboard. The manager re-checks the date before confirming.</div>
+              <Link href="/approvals" className="inline-block mt-2 text-[12px] font-semibold underline underline-offset-2" data-testid="link-open-approvals">Open Manager Approval</Link>
+            </div>
+          </div>
+        ) : (
+          <button className="btn btn-primary w-full mt-3" onClick={onSendForApproval} disabled={sendingDraft || !canApprove} data-testid="button-send-approval">
+            {sendingDraft ? <Loader2 className="spin" /> : <Send />} {sendingDraft ? "Sending to manager" : "Send to Manager for approval"}
+          </button>
+        )
+      )}
       {!!error && <div className="mt-3"><ErrorBox error={error} /></div>}
     </section>
   );
@@ -349,7 +379,7 @@ function LineItems({ result }: { result: EnquiryResult }) {
   return (
     <div className="overflow-x-auto rounded-lg border border-[#e5e0d6]">
       <table className="w-full text-[12px]" data-testid="table-line-items">
-        <thead className="bg-[#f3f1e9] text-[10px] uppercase tracking-wider text-[#7b857f]" style={{ fontFamily: "IBM Plex Mono" }}>
+        <thead className="bg-[#F6F5F2] text-[10px] uppercase tracking-wider text-[#7b857f]" style={{ fontFamily: "IBM Plex Mono" }}>
           <tr><th className="text-left p-2 font-semibold">Service</th><th className="text-left p-2 font-semibold">Spec</th><th className="text-right p-2 font-semibold">Qty</th><th className="text-right p-2 font-semibold">Unit</th><th className="text-right p-2 font-semibold">Amount</th></tr>
         </thead>
         <tbody>
@@ -414,7 +444,7 @@ function OptionCard({ label, opt, onApprove, approvingDate, canApprove, holdExpi
         </div>
       )}
       {opt.conflicts.length > 0 && (
-        <ul className="list-disc">{opt.conflicts.map((c, i) => <li key={i}>{c.description} <span className="mono">({c.reference})</span></li>)}</ul>
+        <ul className="list-disc">{opt.conflicts.map((c, i) => <li key={i}>{c.description}</li>)}</ul>
       )}
       <p className="flex-1">{opt.explanation}</p>
       {locked && <LockBadge className="mt-3" />}

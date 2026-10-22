@@ -2,7 +2,7 @@
 // It does NOT cache the app or any data, and nothing can be created or edited offline.
 // Its only job: when a page is opened with no connection, show a clear "you are offline" page
 // instead of the browser's error screen. Every API call goes straight to the network.
-const CACHE = "oro-offline-v1";
+const CACHE = "oro-offline-v2";
 const OFFLINE_URL = "offline.html";
 
 self.addEventListener("install", (event) => {

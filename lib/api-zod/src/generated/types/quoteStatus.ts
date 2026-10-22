@@ -12,4 +12,5 @@ export type QuoteStatus = typeof QuoteStatus[keyof typeof QuoteStatus];
 export const QuoteStatus = {
   draft: 'draft',
   approved: 'approved',
+  rejected: 'rejected',
 } as const;

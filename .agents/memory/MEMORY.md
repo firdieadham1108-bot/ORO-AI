@@ -1,1 +1,1 @@
-- [ORO AI scope and storage decisions](oro-ai-decisions.md) — SQLite (node:sqlite), phased scope, fixed reference date; user limits work to the phases they name
+- [ORO AI scope and storage decisions](oro-ai-decisions.md) — SQLite (node:sqlite), phased scope, fixed reference date, navy/gold brand, protected components; user limits work to named phases and resets the demo live

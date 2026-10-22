@@ -23,20 +23,26 @@ import type {
   ActivityEntry,
   ApprovalInput,
   Commitment,
+  DashboardSummary,
+  DraftApprovalInput,
+  DraftRejectionInput,
   EnquiryAnalysis,
   EnquiryInput,
   EnquiryResult,
   ErrorResponse,
   GetStaffAvailabilityParams,
+  GetStaffScheduleParams,
   HealthStatus,
   LeaveEventResult,
   OrbyteWallet,
   Quote,
   QuoteInput,
+  QuoteScheduleOptions,
   RecoveryInput,
   ResetResult,
   Service,
   StaffAvailabilityDay,
+  StaffSchedule,
   TranscriptionInput,
   TranscriptionResult
 } from './api.schemas';
@@ -891,6 +897,423 @@ export function useGetQuote<TData = Awaited<ReturnType<typeof getQuote>>, TError
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetQuoteQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetQuoteScheduleOptionsUrl = (id: number,) => {
+
+
+
+
+  return `/api/quotes/${id}/schedule-options`
+}
+
+/**
+ * @summary Re-check a draft quotation's requested date and find alternatives (for manager approval)
+ */
+export const getQuoteScheduleOptions = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<QuoteScheduleOptions> => {
+
+  return customFetch<QuoteScheduleOptions>(getGetQuoteScheduleOptionsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetQuoteScheduleOptionsQueryKey = (id: number,) => {
+    return [
+    `/api/quotes/${id}/schedule-options`
+    ] as const;
+    }
+
+
+export const getGetQuoteScheduleOptionsQueryOptions = <TData = Awaited<ReturnType<typeof getQuoteScheduleOptions>>, TError = ErrorType<ErrorResponse>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getQuoteScheduleOptions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetQuoteScheduleOptionsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getQuoteScheduleOptions>>> = ({ signal }) => getQuoteScheduleOptions(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getQuoteScheduleOptions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetQuoteScheduleOptionsQueryResult = NonNullable<Awaited<ReturnType<typeof getQuoteScheduleOptions>>>
+export type GetQuoteScheduleOptionsQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Re-check a draft quotation's requested date and find alternatives (for manager approval)
+ */
+
+export function useGetQuoteScheduleOptions<TData = Awaited<ReturnType<typeof getQuoteScheduleOptions>>, TError = ErrorType<ErrorResponse>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getQuoteScheduleOptions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetQuoteScheduleOptionsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getApproveDraftQuotationUrl = (id: number,) => {
+
+
+
+
+  return `/api/quotes/${id}/approve`
+}
+
+/**
+ * Same rules as POST /approvals, applied to a draft that sales staff sent for approval. Re-checks the date, reserves the crew and marks the draft approved. 409 if the date is not feasible or the quotation is no longer a draft.
+ * @summary Manager approves an existing draft quotation for a chosen appointment date
+ */
+export const approveDraftQuotation = async (id: number,
+    draftApprovalInput: DraftApprovalInput, options?: Parameters<typeof customFetch>[1]): Promise<Quote> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Quote>(getApproveDraftQuotationUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(draftApprovalInput)
+  }
+);}
+
+
+
+
+
+export const getApproveDraftQuotationMutationKey = () => ['approveDraftQuotation'] as const;
+
+export const getApproveDraftQuotationMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveDraftQuotation>>, TError,ApproveDraftQuotationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof approveDraftQuotation>>, TError,ApproveDraftQuotationMutationVariables, TContext> => {
+
+const mutationKey = getApproveDraftQuotationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof approveDraftQuotation>>, ApproveDraftQuotationMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  approveDraftQuotation(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApproveDraftQuotationMutationResult = NonNullable<Awaited<ReturnType<typeof approveDraftQuotation>>>
+    export type ApproveDraftQuotationMutationBody = BodyType<DraftApprovalInput>
+    export type ApproveDraftQuotationMutationError = ErrorType<ErrorResponse>
+    export type ApproveDraftQuotationMutationVariables = {id: number;data: BodyType<DraftApprovalInput>}
+
+    /**
+ * @summary Manager approves an existing draft quotation for a chosen appointment date
+ */
+export const useApproveDraftQuotation = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveDraftQuotation>>, TError,ApproveDraftQuotationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof approveDraftQuotation>>,
+        TError,
+        ApproveDraftQuotationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getApproveDraftQuotationMutationOptions(options));
+    }
+
+export const getRejectDraftQuotationUrl = (id: number,) => {
+
+
+
+
+  return `/api/quotes/${id}/reject`
+}
+
+/**
+ * @summary Manager declines a draft quotation
+ */
+export const rejectDraftQuotation = async (id: number,
+    draftRejectionInput: DraftRejectionInput, options?: Parameters<typeof customFetch>[1]): Promise<Quote> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Quote>(getRejectDraftQuotationUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(draftRejectionInput)
+  }
+);}
+
+
+
+
+
+export const getRejectDraftQuotationMutationKey = () => ['rejectDraftQuotation'] as const;
+
+export const getRejectDraftQuotationMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectDraftQuotation>>, TError,RejectDraftQuotationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof rejectDraftQuotation>>, TError,RejectDraftQuotationMutationVariables, TContext> => {
+
+const mutationKey = getRejectDraftQuotationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rejectDraftQuotation>>, RejectDraftQuotationMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  rejectDraftQuotation(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RejectDraftQuotationMutationResult = NonNullable<Awaited<ReturnType<typeof rejectDraftQuotation>>>
+    export type RejectDraftQuotationMutationBody = BodyType<DraftRejectionInput>
+    export type RejectDraftQuotationMutationError = ErrorType<ErrorResponse>
+    export type RejectDraftQuotationMutationVariables = {id: number;data: BodyType<DraftRejectionInput>}
+
+    /**
+ * @summary Manager declines a draft quotation
+ */
+export const useRejectDraftQuotation = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectDraftQuotation>>, TError,RejectDraftQuotationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof rejectDraftQuotation>>,
+        TError,
+        RejectDraftQuotationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRejectDraftQuotationMutationOptions(options));
+    }
+
+export const getGetDashboardSummaryUrl = () => {
+
+
+
+
+  return `/api/dashboard/summary`
+}
+
+/**
+ * @summary Dashboard counters, items that need attention and upcoming appointments
+ */
+export const getDashboardSummary = async ( options?: Parameters<typeof customFetch>[1]): Promise<DashboardSummary> => {
+
+  return customFetch<DashboardSummary>(getGetDashboardSummaryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDashboardSummaryQueryKey = () => {
+    return [
+    `/api/dashboard/summary`
+    ] as const;
+    }
+
+
+export const getGetDashboardSummaryQueryOptions = <TData = Awaited<ReturnType<typeof getDashboardSummary>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDashboardSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDashboardSummaryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDashboardSummary>>> = ({ signal }) => getDashboardSummary({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDashboardSummary>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDashboardSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getDashboardSummary>>>
+export type GetDashboardSummaryQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Dashboard counters, items that need attention and upcoming appointments
+ */
+
+export function useGetDashboardSummary<TData = Awaited<ReturnType<typeof getDashboardSummary>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDashboardSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDashboardSummaryQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetStaffScheduleUrl = (params?: GetStaffScheduleParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/staff/schedule?${stringifiedParams}` : `/api/staff/schedule`
+}
+
+/**
+ * @summary Week board - every technician's leave, jobs and ORO bookings per day
+ */
+export const getStaffSchedule = async (params?: GetStaffScheduleParams, options?: Parameters<typeof customFetch>[1]): Promise<StaffSchedule> => {
+
+  return customFetch<StaffSchedule>(getGetStaffScheduleUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStaffScheduleQueryKey = (params?: GetStaffScheduleParams,) => {
+    return [
+    `/api/staff/schedule`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetStaffScheduleQueryOptions = <TData = Awaited<ReturnType<typeof getStaffSchedule>>, TError = ErrorType<ErrorResponse>>(params?: GetStaffScheduleParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStaffSchedule>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStaffScheduleQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStaffSchedule>>> = ({ signal }) => getStaffSchedule(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStaffSchedule>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStaffScheduleQueryResult = NonNullable<Awaited<ReturnType<typeof getStaffSchedule>>>
+export type GetStaffScheduleQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Week board - every technician's leave, jobs and ORO bookings per day
+ */
+
+export function useGetStaffSchedule<TData = Awaited<ReturnType<typeof getStaffSchedule>>, TError = ErrorType<ErrorResponse>>(
+ params?: GetStaffScheduleParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStaffSchedule>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStaffScheduleQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

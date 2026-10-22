@@ -274,6 +274,15 @@ export interface EnquiryResult {
   alternatives: ScheduleCheck[];
 }
 
+export type QuoteInputExtraItemsItem = {
+  serviceCode: string;
+  /**
+     * @minimum 1
+     * @maximum 500
+     */
+  quantity: number;
+};
+
 export interface QuoteInput {
   /**
      * @minLength 1
@@ -298,6 +307,99 @@ export interface QuoteInput {
      * @nullable
      */
   message?: string | null;
+  /**
+     * @maxItems 5
+     * @nullable
+     */
+  extraItems?: QuoteInputExtraItemsItem[] | null;
+  /**
+     * @maxLength 80
+     * @nullable
+     */
+  requestedBy?: string | null;
+}
+
+export interface DraftApprovalInput {
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  appointmentDate: string;
+  /**
+     * @maxLength 80
+     * @nullable
+     */
+  approverName?: string | null;
+}
+
+export interface DraftRejectionInput {
+  /**
+     * @maxLength 400
+     * @nullable
+     */
+  reason?: string | null;
+  /**
+     * @maxLength 80
+     * @nullable
+     */
+  managerName?: string | null;
+}
+
+export type QuoteStatus = typeof QuoteStatus[keyof typeof QuoteStatus];
+
+
+export const QuoteStatus = {
+  draft: 'draft',
+  approved: 'approved',
+  rejected: 'rejected',
+} as const;
+
+/**
+ * @nullable
+ */
+export type QuoteRiskStatus = typeof QuoteRiskStatus[keyof typeof QuoteRiskStatus] | null;
+
+
+export const QuoteRiskStatus = {
+  FEASIBLE: 'FEASIBLE',
+  AT_RISK: 'AT_RISK',
+} as const;
+
+export interface Quote {
+  id: number;
+  reference: string;
+  companyName: string;
+  customerName: string;
+  location: string;
+  serviceCode: string;
+  serviceName: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  requestedDate: string;
+  /** @nullable */
+  appointmentDate: string | null;
+  status: QuoteStatus;
+  /** @nullable */
+  approvedBy: string | null;
+  /** @nullable */
+  approvedAt: string | null;
+  /** @nullable */
+  rejectionReason: string | null;
+  /** @nullable */
+  createdBy: string | null;
+  /** @nullable */
+  message: string | null;
+  crew: string[];
+  lineItems: PricingLine[];
+  /** @nullable */
+  riskStatus: QuoteRiskStatus;
+  /** @nullable */
+  riskReason: string | null;
+  createdAt: string;
+}
+
+export interface QuoteScheduleOptions {
+  quote: Quote;
+  requested: ScheduleCheck;
+  alternatives: ScheduleCheck[];
 }
 
 export type ApprovalInputExtraItemsItem = {
@@ -345,53 +447,6 @@ export interface ApprovalInput {
      * @nullable
      */
   approverName?: string | null;
-}
-
-export type QuoteStatus = typeof QuoteStatus[keyof typeof QuoteStatus];
-
-
-export const QuoteStatus = {
-  draft: 'draft',
-  approved: 'approved',
-} as const;
-
-/**
- * @nullable
- */
-export type QuoteRiskStatus = typeof QuoteRiskStatus[keyof typeof QuoteRiskStatus] | null;
-
-
-export const QuoteRiskStatus = {
-  FEASIBLE: 'FEASIBLE',
-  AT_RISK: 'AT_RISK',
-} as const;
-
-export interface Quote {
-  id: number;
-  reference: string;
-  companyName: string;
-  customerName: string;
-  location: string;
-  serviceCode: string;
-  serviceName: string;
-  quantity: number;
-  unitPrice: number;
-  totalPrice: number;
-  requestedDate: string;
-  /** @nullable */
-  appointmentDate: string | null;
-  status: QuoteStatus;
-  /** @nullable */
-  approvedBy: string | null;
-  /** @nullable */
-  approvedAt: string | null;
-  crew: string[];
-  lineItems: PricingLine[];
-  /** @nullable */
-  riskStatus: QuoteRiskStatus;
-  /** @nullable */
-  riskReason: string | null;
-  createdAt: string;
 }
 
 export interface RejectedCandidate {
@@ -478,6 +533,163 @@ export interface OrbyteWallet {
   label: string;
 }
 
+export interface DashboardCounts {
+  enquiries: number;
+  pendingQuotations: number;
+  approvedQuotations: number;
+  rejectedQuotations: number;
+  upcomingAppointments: number;
+  schedulingConflicts: number;
+  conflictsDetected: number;
+  atRiskCommitments: number;
+}
+
+export type AttentionItemKind = typeof AttentionItemKind[keyof typeof AttentionItemKind];
+
+
+export const AttentionItemKind = {
+  at_risk: 'at_risk',
+  pending_approval: 'pending_approval',
+  crew_short: 'crew_short',
+} as const;
+
+export type AttentionItemSeverity = typeof AttentionItemSeverity[keyof typeof AttentionItemSeverity];
+
+
+export const AttentionItemSeverity = {
+  danger: 'danger',
+  warning: 'warning',
+  info: 'info',
+} as const;
+
+export interface AttentionItem {
+  kind: AttentionItemKind;
+  severity: AttentionItemSeverity;
+  title: string;
+  detail: string;
+  /** @nullable */
+  quoteId: number | null;
+  /** @nullable */
+  reference: string | null;
+}
+
+/**
+ * @nullable
+ */
+export type UpcomingAppointmentRiskStatus = typeof UpcomingAppointmentRiskStatus[keyof typeof UpcomingAppointmentRiskStatus] | null;
+
+
+export const UpcomingAppointmentRiskStatus = {
+  FEASIBLE: 'FEASIBLE',
+  AT_RISK: 'AT_RISK',
+} as const;
+
+export interface UpcomingAppointment {
+  quoteId: number;
+  reference: string;
+  customerName: string;
+  location: string;
+  appointmentDate: string;
+  weekday: string;
+  serviceSummary: string;
+  totalPrice: number;
+  crew: string[];
+  /** @nullable */
+  riskStatus: UpcomingAppointmentRiskStatus;
+}
+
+export interface CrewToday {
+  date: string;
+  weekday: string;
+  technicians: number;
+  available: number;
+  onLeave: number;
+  assigned: number;
+}
+
+export interface DashboardSummary {
+  referenceDate: string;
+  referenceDateLabel: string;
+  counts: DashboardCounts;
+  needsAttention: AttentionItem[];
+  upcoming: UpcomingAppointment[];
+  crewToday: CrewToday;
+}
+
+export type ScheduleBlockKind = typeof ScheduleBlockKind[keyof typeof ScheduleBlockKind];
+
+
+export const ScheduleBlockKind = {
+  leave: 'leave',
+  assignment: 'assignment',
+} as const;
+
+export type ScheduleBlockSource = typeof ScheduleBlockSource[keyof typeof ScheduleBlockSource];
+
+
+export const ScheduleBlockSource = {
+  eleave: 'eleave',
+  orbyte_work: 'orbyte_work',
+  oro_booking: 'oro_booking',
+} as const;
+
+export interface ScheduleBlock {
+  id: number;
+  kind: ScheduleBlockKind;
+  source: ScheduleBlockSource;
+  title: string;
+  reference: string;
+  startAt: string;
+  endAt: string;
+  /** @nullable */
+  quoteId: number | null;
+}
+
+export type StaffScheduleDayStatus = typeof StaffScheduleDayStatus[keyof typeof StaffScheduleDayStatus];
+
+
+export const StaffScheduleDayStatus = {
+  available: 'available',
+  on_leave: 'on_leave',
+  assigned: 'assigned',
+  not_a_technician: 'not_a_technician',
+  non_working: 'non_working',
+} as const;
+
+export interface StaffScheduleDay {
+  date: string;
+  status: StaffScheduleDayStatus;
+  blocks: ScheduleBlock[];
+}
+
+export interface StaffScheduleRow {
+  id: number;
+  name: string;
+  role: string;
+  isSenior: boolean;
+  canInstall: boolean;
+  days: StaffScheduleDay[];
+}
+
+export interface ScheduleDayHeader {
+  date: string;
+  weekday: string;
+  workingDay: boolean;
+  isReferenceDate: boolean;
+  availableInstallers: number;
+  availableSeniorInstallers: number;
+  technicians: number;
+}
+
+export interface StaffSchedule {
+  from: string;
+  to: string;
+  referenceDate: string;
+  windowLabel: string;
+  days: ScheduleDayHeader[];
+  staff: StaffScheduleRow[];
+}
+
 export interface ResetResult {
   message: string;
   staffCount: number;
@@ -489,5 +701,19 @@ export type GetStaffAvailabilityParams = {
  * @pattern ^\d{4}-\d{2}-\d{2}$
  */
 date: string;
+};
+
+export type GetStaffScheduleParams = {
+/**
+ * First day of the board (YYYY-MM-DD). Defaults to the day after the demo reference date.
+ * @pattern ^\d{4}-\d{2}-\d{2}$
+ */
+from?: string;
+/**
+ * Number of days (1-14, default 7)
+ * @minimum 1
+ * @maximum 14
+ */
+days?: number;
 };
 

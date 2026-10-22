@@ -6,7 +6,8 @@ Quotation and staffing-availability workspace for the fictional CoolAir Services
 
 - API server: workflow `artifacts/api-server: API Server`; web app: `artifacts/oro-ai: web`
 - `pnpm run typecheck` — full typecheck
-- `npm test` — 10 required tests (+ extra, voice and wallet checks) against an isolated test server + temp database (speech keys blanked)
+- `npm test` — 19 tests: the 10 required brief tests + extra, voice, wallet, dashboard, staff schedule and draft-approval checks, against an isolated test server + temp database (speech keys blanked)
+- `PORT=5999 BASE_PATH=/ pnpm --filter @workspace/oro-ai run build` — production build check (vite.config.ts requires both env vars; deployment supplies them)
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate hooks and Zod schemas after editing `lib/api-spec/openapi.yaml`
 - Quick check: `curl localhost:80/api/staff/availability?date=2026-10-23`
 
@@ -22,14 +23,16 @@ Quotation and staffing-availability workspace for the fictional CoolAir Services
 - `artifacts/api-server/src/lib/oro/orbyte-adapters.ts` — the 4 Mock Orbyte adapters (People, Leave, Work, Approval); core logic reads/writes Orbyte-type data only through them. Documented in `orbyte-api-assumptions.md`.
 - `README.md`, `LICENSE` (Apache 2.0, unmodified official text), `orbyte-api-assumptions.md` at the root
 - `artifacts/api-server/src/routes/oro.ts` — API routes; contract in `lib/api-spec/openapi.yaml`
-- `artifacts/oro-ai/src/pages/workspace.tsx` — the single-page workspace: enquiry input (left), approval card with Option A/B and quotation preview (right)
+- `artifacts/oro-ai/src/components/shell.tsx` — app shell: desktop sidebar (>=1024px), icon rail on tablets, bottom tabs + "More" sheet on phones, role switch, reset button, reference-date chip. `src/components/kit.tsx` = shared page header/badges/empty states; `src/lib/dates.ts` = Malaysia-time date labels
+- Pages (`artifacts/oro-ai/src/pages/`, routes in `App.tsx`): `dashboard.tsx` (`/`, counts from `GET /api/dashboard/summary`), `workspace.tsx` (`/enquiry`, the New Enquiry screen: enquiry input left, approval card with Option A/B right; Sales can "Send to Manager for approval" which creates a draft via `POST /api/quotes`), `quotations.tsx` (`/quotations`, `?open=<id>` opens the printable quote), `schedule.tsx` (`/schedule`, week board from `GET /api/staff/schedule?from&days`), `approvals.tsx` (`/approvals`, drafts re-checked via `GET /api/quotes/{id}/schedule-options`, then `POST /api/quotes/{id}/approve` or `/reject`), `risk-monitor.tsx` (`/risk`), `activity.tsx` (`/activity`)
 - `artifacts/api-server/src/lib/oro/approval.ts` + `quotes.ts` — `POST /api/approvals` re-checks the chosen date, saves an approved quote, reserves the crew (assignment rows in capacity_blocks with `quote_id`) and logs it
 - `artifacts/api-server/src/lib/oro/risk.ts` — `POST /api/orbyte-sim/emergency-leave` (Bala, Mon 26 Oct, eLeave LV-0499), `GET /api/commitments`, `POST /api/commitments/:id/recover` (manager only, re-checked in a transaction)
 - `artifacts/oro-ai/src/components/risk.tsx` — simulation bar and red COMMITMENT AT RISK / recovery card
 - Voice-to-Quote: `artifacts/api-server/src/lib/oro/voice.ts` (`POST /api/enquiry/transcribe`, logs `VOICE_TRANSCRIBED`) + `artifacts/oro-ai/src/components/voice-input.tsx`. Sample clip: `artifacts/oro-ai/public/samples/contractor-voice-note-cheras-condo.mp3` (synthetic TTS voice).
 - Simulated Orbyte Credit Wallet: `artifacts/api-server/src/lib/oro/wallet.ts` (`GET /api/orbyte-sim/wallet`) + `artifacts/oro-ai/src/components/wallet-badge.tsx` (in the demo banner)
 - Price validity (7 days) vs. 30s crew-slot hold: `artifacts/oro-ai/src/components/quote-terms.tsx`, used by the approval card
-- PWA: `artifacts/oro-ai/public/manifest.json`, `public/icons/` (generated from an SVG ring mark, navy `#0F172A`), `public/sw.js` + `offline.html`; meta tags in `index.html`
+- PWA: `artifacts/oro-ai/public/manifest.json`, `public/icons/` (generated with ImageMagick from `public/favicon.svg`, navy `#0F1E33` + gold `#B99545`), `public/sw.js` (cache `oro-offline-v2`) + `offline.html`; meta tags in `index.html`
+- Look & feel: tokens in `src/index.css` (navy `#0F1E33`, gold `#B99545`, gold-soft `#F3EBD7`, bg `#F6F5F2`, green/amber/red status colours), fonts Inter (body), Manrope (headings), IBM Plex Mono (references, times). Wordmark: "ORO" navy / "AI" gold.
 
 ## Architecture decisions
 
@@ -46,7 +49,10 @@ Quotation and staffing-availability workspace for the fictional CoolAir Services
 - The 30s crew hold is front-end only (labelled "Demo Simulation"); it locks nothing. After expiry the approve buttons stay disabled until "Re-verify Availability" re-runs `/enquiry`. Real protection remains the server re-check at approval.
 - Service worker is online-first (navigation fallback to `offline.html`, no data caching) and registered only in the production build, so it never touches the Vite dev server.
 - Only 1.0HP and 1.5HP installation are on the price list. Any other size (e.g. 2.0HP) gives `needs_clarification` instead of a made-up price.
+- Draft approval updates the same quote row (status draft -> approved/rejected, no duplicate). Approve reuses the same schedule re-check, crew reservation and 0.10-credit charge as `POST /api/approvals`; reject logs `quotation_rejected` with the optional reason. Both answer 403 for non-manager names.
+- The Staff Schedule page is read-only: it only displays capacity_blocks (eLeave leave, Orbyte Work jobs, ORO bookings). Leave blocks are shown as "All day".
+- The enquiry parser is rule-based; the New Enquiry page says so in a small badge ("rule-based parser (no AI model connected)").
 
 ## Scope
 
-Phases 1-3, manager approval (reserves the crew), Sprint 4 (Optional C+D): simulated eLeave event, at-risk detection and manager-approved recovery, and Sprint 5: Reset Demo State button, demo role switch with lock badges, 4 preset scenario chips, printable quotation modal, Sprint 7 (Optional A): Voice-to-Quote input, Sprint 8: simulated Orbyte Credit Wallet, price validity vs. crew-hold timer, mobile layout + installable PWA (Optional B). One workspace page. Not built: real auth, offline mode, separate pages/mobile nav menu.
+Phases 1-3, manager approval (reserves the crew), Sprint 4 (Optional C+D): simulated eLeave event, at-risk detection and manager-approved recovery, and Sprint 5: Reset Demo State button, demo role switch with lock badges, 4 preset scenario chips, printable quotation modal, Sprint 7 (Optional A): Voice-to-Quote input, Sprint 8: simulated Orbyte Credit Wallet, price validity vs. crew-hold timer, mobile layout + installable PWA (Optional B), Sprint 9: navy/gold redesign with the brief's pages (Dashboard, New Enquiry, Quotations, Staff Schedule, Manager Approval queue with draft -> approve/decline, Risk Monitor, Activity Log) and mobile bottom navigation. Not built: real auth, offline mode, Settings page, Postgres (kept SQLite, 4 tables), the blueprint's multi-step wizard.

@@ -2,8 +2,17 @@ import { Router, type IRouter } from "express";
 import {
   AnalyseEnquiryBody,
   AnalyseEnquiryResponse,
+  ApproveDraftQuotationBody,
+  ApproveDraftQuotationParams,
   ApproveQuotationBody,
   CreateQuoteBody,
+  GetDashboardSummaryResponse,
+  GetQuoteScheduleOptionsParams,
+  GetQuoteScheduleOptionsResponse,
+  GetStaffScheduleQueryParams,
+  GetStaffScheduleResponse,
+  RejectDraftQuotationBody,
+  RejectDraftQuotationParams,
   GetOrbyteWalletResponse,
   GetQuoteParams,
   GetQuoteResponse,
@@ -24,11 +33,14 @@ import {
   TranscribeVoiceNoteResponse,
 } from "@workspace/api-zod";
 import { db, resetDemoData } from "../lib/oro/db";
-import { approveQuotation } from "../lib/oro/approval";
+import { approveDraft, approveQuotation, getQuoteScheduleOptions, rejectDraft } from "../lib/oro/approval";
+import { getDashboardSummary } from "../lib/oro/dashboard";
+import { getStaffSchedule } from "../lib/oro/schedule-board";
 import { listCommitments, recoverCommitment, simulateEmergencyLeave } from "../lib/oro/risk";
 import { insertQuote, toQuote, type QuoteRow } from "../lib/oro/quotes";
 import { getStaffAvailability } from "../lib/oro/availability";
 import { isValidDateString } from "../lib/oro/dates";
+import type { ServiceItem } from "../lib/oro/services";
 import { logEnquiryAnalysed, processEnquiry } from "../lib/oro/enquiry";
 import { parseEnquiry } from "../lib/oro/parser";
 import { findService, SERVICES, senToRm } from "../lib/oro/services";
@@ -45,6 +57,19 @@ router.get("/staff/availability", (req, res): void => {
     return;
   }
   res.json(GetStaffAvailabilityResponse.parse(getStaffAvailability(parsed.data.date)));
+});
+
+router.get("/staff/schedule", (req, res): void => {
+  const parsed = GetStaffScheduleQueryParams.safeParse(req.query);
+  if (!parsed.success || (parsed.data.from !== undefined && !isValidDateString(parsed.data.from))) {
+    res.status(400).json({ error: "Please provide a valid start date (YYYY-MM-DD) and a number of days between 1 and 14." });
+    return;
+  }
+  res.json(GetStaffScheduleResponse.parse(getStaffSchedule(parsed.data.from, parsed.data.days)));
+});
+
+router.get("/dashboard/summary", (_req, res): void => {
+  res.json(GetDashboardSummaryResponse.parse(getDashboardSummary()));
 });
 
 router.get("/services", (_req, res): void => {
@@ -117,6 +142,15 @@ router.post("/quotes", (req, res): void => {
     res.status(400).json({ error: "The requested date is not a valid calendar date." });
     return;
   }
+  const extraLines: Array<{ service: ServiceItem; quantity: number }> = [];
+  for (const item of body.extraItems ?? []) {
+    const extra = findService(item.serviceCode);
+    if (!extra) {
+      res.status(400).json({ error: `Unknown service "${item.serviceCode}". Choose a service from the price list.` });
+      return;
+    }
+    extraLines.push({ service: extra, quantity: item.quantity });
+  }
 
   const created = insertQuote(
     {
@@ -124,12 +158,57 @@ router.post("/quotes", (req, res): void => {
       location: body.location.trim(),
       service,
       quantity: body.quantity,
+      extraLines,
       requestedDate: body.requestedDate,
       message: body.message ?? null,
     },
-    SALESPERSON,
+    body.requestedBy?.trim() || SALESPERSON,
   );
   res.status(201).json(GetQuoteResponse.parse(toQuote(created)));
+});
+
+router.get("/quotes/:id/schedule-options", (req, res): void => {
+  const params = GetQuoteScheduleOptionsParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: "Invalid quotation id." });
+    return;
+  }
+  const outcome = getQuoteScheduleOptions(params.data.id);
+  if (!outcome.ok) {
+    res.status(outcome.status).json({ error: outcome.error });
+    return;
+  }
+  res.json(GetQuoteScheduleOptionsResponse.parse(outcome.options));
+});
+
+router.post("/quotes/:id/approve", (req, res): void => {
+  const params = ApproveDraftQuotationParams.safeParse(req.params);
+  const body = ApproveDraftQuotationBody.safeParse(req.body);
+  if (!params.success || !body.success) {
+    res.status(400).json({ error: "Approval details are incomplete or invalid." });
+    return;
+  }
+  const outcome = approveDraft(params.data.id, body.data);
+  if (!outcome.ok) {
+    res.status(outcome.status).json({ error: outcome.error });
+    return;
+  }
+  res.json(GetQuoteResponse.parse(toQuote(outcome.quote)));
+});
+
+router.post("/quotes/:id/reject", (req, res): void => {
+  const params = RejectDraftQuotationParams.safeParse(req.params);
+  const body = RejectDraftQuotationBody.safeParse(req.body ?? {});
+  if (!params.success || !body.success) {
+    res.status(400).json({ error: "Rejection details are invalid." });
+    return;
+  }
+  const outcome = rejectDraft(params.data.id, body.data);
+  if (!outcome.ok) {
+    res.status(outcome.status).json({ error: outcome.error });
+    return;
+  }
+  res.json(GetQuoteResponse.parse(toQuote(outcome.quote)));
 });
 
 router.post("/approvals", (req, res): void => {
