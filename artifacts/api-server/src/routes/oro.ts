@@ -19,6 +19,8 @@ import {
   ProcessEnquiryBody,
   ProcessEnquiryResponse,
   ResetDemoResponse,
+  TranscribeVoiceNoteBody,
+  TranscribeVoiceNoteResponse,
 } from "@workspace/api-zod";
 import { db, resetDemoData } from "../lib/oro/db";
 import { approveQuotation } from "../lib/oro/approval";
@@ -29,6 +31,7 @@ import { isValidDateString } from "../lib/oro/dates";
 import { logEnquiryAnalysed, processEnquiry } from "../lib/oro/enquiry";
 import { parseEnquiry } from "../lib/oro/parser";
 import { findService, SERVICES, senToRm } from "../lib/oro/services";
+import { transcribeVoiceNote } from "../lib/oro/voice";
 
 const router: IRouter = Router();
 const SALESPERSON = "Salesperson (demo)";
@@ -74,6 +77,21 @@ router.post("/enquiry", (req, res): void => {
     return;
   }
   res.json(ProcessEnquiryResponse.parse(processEnquiry(parsed.data.message)));
+});
+
+// Voice-to-Quote: returns text only. The web app puts it in the enquiry box, then calls POST /enquiry.
+router.post("/enquiry/transcribe", async (req, res): Promise<void> => {
+  const parsed = TranscribeVoiceNoteBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Voice note request is incomplete or invalid." });
+    return;
+  }
+  const outcome = await transcribeVoiceNote(parsed.data);
+  if (!outcome.ok) {
+    res.status(outcome.status).json({ error: outcome.error });
+    return;
+  }
+  res.json(TranscribeVoiceNoteResponse.parse(outcome.result));
 });
 
 router.get("/quotes", (_req, res): void => {

@@ -77,6 +77,69 @@ export interface EnquiryInput {
   message: string;
 }
 
+export type TranscriptionInputSource = typeof TranscriptionInputSource[keyof typeof TranscriptionInputSource];
+
+
+export const TranscriptionInputSource = {
+  sample: 'sample',
+  upload: 'upload',
+  recording: 'recording',
+  browser_speech: 'browser_speech',
+} as const;
+
+export interface TranscriptionInput {
+  source: TranscriptionInputSource;
+  /** @maxLength 80 */
+  sampleId?: string;
+  /** @maxLength 200 */
+  fileName?: string;
+  /** @maxLength 100 */
+  mimeType?: string;
+  /** @maxLength 14000000 */
+  audioBase64?: string;
+  /** @maxLength 2000 */
+  transcript?: string;
+  /**
+     * @minimum 0
+     * @maximum 3600
+     */
+  durationSeconds?: number;
+}
+
+export type TranscriptionResultMode = typeof TranscriptionResultMode[keyof typeof TranscriptionResultMode];
+
+
+export const TranscriptionResultMode = {
+  openai: 'openai',
+  simulated: 'simulated',
+  browser: 'browser',
+} as const;
+
+export type TranscriptionResultSource = typeof TranscriptionResultSource[keyof typeof TranscriptionResultSource];
+
+
+export const TranscriptionResultSource = {
+  sample: 'sample',
+  upload: 'upload',
+  recording: 'recording',
+  browser_speech: 'browser_speech',
+} as const;
+
+export interface TranscriptionResult {
+  transcript: string;
+  mode: TranscriptionResultMode;
+  label: string;
+  provider: string;
+  source: TranscriptionResultSource;
+  /** @nullable */
+  fileName: string | null;
+  /** @nullable */
+  sampleId: string | null;
+  /** @nullable */
+  durationSeconds: number | null;
+  note: string;
+}
+
 export type ParsedItemServiceKind = typeof ParsedItemServiceKind[keyof typeof ParsedItemServiceKind];
 
 

@@ -7,6 +7,7 @@
 import { test, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { DatabaseSync } from "node:sqlite";
+import fs from "node:fs";
 
 const BASE = process.env.ORO_API_URL;
 const DB_PATH = process.env.ORO_DB_PATH;
@@ -282,4 +283,55 @@ test("Extra - Preset scenario 2 (BM multi-service) = RM560; scenario 3 (Chinese,
   assert.equal(zh.status, "needs_clarification");
   assert.equal(zh.analysis.location, "Cheras");
   assert.equal(zh.pricing, undefined);
+});
+
+// ---------- Sprint 7: Voice-to-Quote (MASTER_BRIEF.md Optional A) ----------
+
+const SAMPLE_FILE = new URL("../../oro-ai/public/samples/contractor-voice-note-cheras-condo.mp3", import.meta.url);
+const CONTRACTOR_NOTE =
+  "Boss, client at Cheras Condo wants servicing for two 1.5HP aircons and a chemical wash this Monday, 26 October.";
+
+test("Voice - simulated contractor voice note is labelled, logged, and quoted by the same pipeline", async () => {
+  const t = await call("POST", "/enquiry/transcribe", { source: "sample", sampleId: "contractor-cheras-condo" });
+  assert.equal(t.status, 200);
+  assert.equal(t.body.mode, "simulated");
+  assert.equal(t.body.label, "Simulated Demo Transcription");
+  assert.equal(t.body.transcript, CONTRACTOR_NOTE);
+  const log = (await call("GET", "/activity")).body;
+  assert.equal(log[0].action, "VOICE_TRANSCRIBED");
+  assert.match(log[0].description, /Simulated Demo Transcription/);
+
+  // Handoff: the transcript goes through the normal /enquiry analysis (2 x RM80 + 1 x RM150).
+  const r = await enquiry(t.body.transcript);
+  const lines = r.pricing.lines.map((l) => [l.serviceCode, l.quantity]);
+  assert.deepEqual(lines, [["standard_service", 2], ["chemical_wash", 1]]);
+  assert.equal(r.pricing.totalFormatted, "RM310.00");
+  assert.equal(r.analysis.requestedDate, MONDAY);
+  assert.equal(r.analysis.location, "Cheras");
+  assert.equal(r.status, "feasible");
+});
+
+test("Voice - uploads without a speech key give a labelled simulated transcript; bad requests are refused", async () => {
+  const audioBase64 = fs.readFileSync(SAMPLE_FILE).toString("base64");
+  const sample = await call("POST", "/enquiry/transcribe", {
+    source: "upload", fileName: "contractor-voice-note-cheras-condo.mp3", mimeType: "audio/mpeg", audioBase64,
+  });
+  assert.equal(sample.status, 200);
+  assert.equal(sample.body.label, "Simulated Demo Transcription");
+  assert.equal(sample.body.transcript, CONTRACTOR_NOTE);
+  assert.match(sample.body.note, /is the demo sample/);
+
+  const other = await call("POST", "/enquiry/transcribe", { source: "upload", fileName: "site-visit.m4a", mimeType: "audio/mp4", audioBase64 });
+  assert.equal(other.body.mode, "simulated");
+  assert.match(other.body.note, /NOT the words in "site-visit.m4a"/, "never pretends to have heard an unknown file");
+
+  const spoken = await call("POST", "/enquiry/transcribe", { source: "browser_speech", transcript: "Install 4 units 1.5HP at Cheras on 26 Oct" });
+  assert.equal(spoken.body.mode, "browser");
+
+  assert.equal((await call("POST", "/enquiry/transcribe", { source: "upload", fileName: "notes.txt", audioBase64 })).status, 400);
+  assert.equal((await call("POST", "/enquiry/transcribe", { source: "upload", fileName: "empty.mp3", audioBase64: "" })).status, 400);
+  assert.equal((await call("POST", "/enquiry/transcribe", { source: "sample", sampleId: "nope" })).status, 400);
+  assert.equal((await call("POST", "/enquiry/transcribe", { source: "browser_speech", transcript: " " })).status, 422);
+  const voiceLogs = (await activityActions()).filter((a) => a === "VOICE_TRANSCRIBED").length;
+  assert.equal(voiceLogs, 3, "only successful transcriptions are logged");
 });

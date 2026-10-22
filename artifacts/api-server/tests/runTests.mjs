@@ -64,7 +64,11 @@ try {
   const logLines = [];
   server = spawn("node", [path.join(buildDir, "index.mjs")], {
     cwd: serverDir,
-    env: { ...process.env, PORT: String(port), ORO_DB_PATH: dbPath, NODE_ENV: "test", LOG_LEVEL: "warn" },
+    // Speech-to-text keys are blanked so voice tests always use the labelled simulated transcription.
+    env: {
+      ...process.env, PORT: String(port), ORO_DB_PATH: dbPath, NODE_ENV: "test", LOG_LEVEL: "warn",
+      OPENAI_API_KEY: "", AI_INTEGRATIONS_OPENAI_BASE_URL: "", AI_INTEGRATIONS_OPENAI_API_KEY: "",
+    },
     stdio: ["ignore", "pipe", "pipe"],
   });
   server.stdout.on("data", (d) => logLines.push(d.toString()));

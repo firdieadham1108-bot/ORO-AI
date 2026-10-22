@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useProcessEnquiry, useApproveQuotation, useListActivity, useListCommitments, getListActivityQueryKey, getListCommitmentsQueryKey } from "@workspace/api-client-react";
-import type { EnquiryResult, ScheduleCheck, Quote, Commitment } from "@workspace/api-client-react";
-import { Sparkles, Loader2, AlertTriangle, ShieldCheck, FileText, RotateCcw, Inbox, CheckCircle2, Lock } from "lucide-react";
+import type { EnquiryResult, ScheduleCheck, Quote, Commitment, TranscriptionResult } from "@workspace/api-client-react";
+import { Sparkles, Loader2, AlertTriangle, ShieldCheck, FileText, RotateCcw, Inbox, CheckCircle2, Lock, Mic } from "lucide-react";
 import { ErrorBox } from "@/components/shell";
 import { RiskAlerts, SimulationBar } from "@/components/risk";
 import { PrintableQuoteModal, QuoteDocument, type QuoteDocData } from "@/components/quote-document";
 import { LockBadge } from "@/components/lock-badge";
+import { VoiceInput } from "@/components/voice-input";
 import { useRole } from "@/lib/role";
 import { rm, longDate, myTime } from "@/lib/util";
 
@@ -34,6 +35,8 @@ const SCENARIOS = [
     message: "Hi CoolAir, can quote me price to install 4 aircons at my apartment in Cheras next Wednesday?",
   },
 ];
+
+const VOICE_SAMPLE_CUSTOMER = "Cheras Condo (demo customer)";
 
 const STATUS: Record<string, { cls: string; label: string }> = {
   conflict: { cls: "badge-red", label: "Scheduling conflict" },
@@ -106,14 +109,23 @@ export default function Workspace() {
   const [approvingDate, setApprovingDate] = useState<string | null>(null);
   const [recovered, setRecovered] = useState<Commitment | null>(null);
   const [printDoc, setPrintDoc] = useState<QuoteDocData | null>(null);
+  const [voice, setVoice] = useState<TranscriptionResult | null>(null);
   const commitments = useListCommitments();
   // Show the latest saved version of the approved quote (crew or risk status may change after approval).
   const liveQuote = quote ? (commitments.data?.find((c) => c.quote.id === quote.id)?.quote ?? quote) : null;
 
-  const analyse = () => {
+  const analyse = (text: string = message) => {
     approve.reset();
     setQuote(null);
-    enquiry.mutate({ data: { message } }, { onSuccess: (r) => { setResult(r); setSentMessage(message); qc.invalidateQueries({ queryKey: getListActivityQueryKey() }); } });
+    enquiry.mutate({ data: { message: text } }, { onSuccess: (r) => { setResult(r); setSentMessage(text); qc.invalidateQueries({ queryKey: getListActivityQueryKey() }); } });
+  };
+  // Voice-to-Quote handoff: the transcript goes into the editable message box, then the normal analysis runs on it.
+  const onTranscript = (t: TranscriptionResult) => {
+    setVoice(t);
+    setMessage(t.transcript);
+    if (t.source === "sample") setCustomer(VOICE_SAMPLE_CUSTOMER);
+    qc.invalidateQueries({ queryKey: getListActivityQueryKey() });
+    analyse(t.transcript);
   };
   const doApprove = (opt: ScheduleCheck) => {
     const p = result?.pricing;
@@ -133,7 +145,7 @@ export default function Workspace() {
       onSettled: () => { setApprovingDate(null); qc.invalidateQueries({ queryKey: getListActivityQueryKey() }); },
     });
   };
-  const startOver = () => { setResult(null); setQuote(null); setMessage(""); enquiry.reset(); approve.reset(); };
+  const startOver = () => { setResult(null); setQuote(null); setMessage(""); setVoice(null); enquiry.reset(); approve.reset(); };
 
   return (
     <div className="page">
@@ -147,7 +159,7 @@ export default function Workspace() {
       <div className="grid gap-5 lg:grid-cols-[minmax(0,.9fr)_minmax(0,1.3fr)] items-start">
         <div className="grid gap-5 no-print">
           <section className="panel">
-            <div className="panel-heading"><div><h2>Customer enquiry</h2><p>Paste from WhatsApp or pick a test scenario.</p></div></div>
+            <div className="panel-heading"><div><h2>Customer enquiry</h2><p>Paste from WhatsApp, send a voice note, or pick a test scenario.</p></div></div>
             <div className="field mb-3"><label htmlFor="cust">Customer name</label>
               <input id="cust" value={customer} maxLength={160} onChange={(e) => setCustomer(e.target.value)} data-testid="input-customer" /></div>
             <div className="mb-2">
@@ -159,7 +171,7 @@ export default function Workspace() {
                     className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
                       message === s.message ? "border-[#2f6e52] bg-[#e8f2e9] text-[#2f6e52]" : "border-[#ded9ce] bg-[#faf9f4] text-[#4c5a5f] hover:bg-[#f0ede4]"
                     }`}
-                    onClick={() => { setMessage(s.message); setCustomer(s.customer); }}
+                    onClick={() => { setMessage(s.message); setCustomer(s.customer); setVoice(null); }}
                     data-testid={`button-scenario-${i + 1}`}
                   >
                     {s.label}
@@ -168,11 +180,13 @@ export default function Workspace() {
               </div>
             </div>
             <div className="field"><label htmlFor="msg">Message</label>
-              <textarea id="msg" value={message} maxLength={2000} onChange={(e) => setMessage(e.target.value)} placeholder="Paste the customer's message here" data-testid="input-message" /></div>
-            <button className="btn btn-primary w-full mt-4" disabled={!message.trim() || !customer.trim() || enquiry.isPending} onClick={analyse} data-testid="button-analyse">
+              {voice && <VoiceTranscriptNotice voice={voice} edited={message !== voice.transcript} />}
+              <textarea id="msg" value={message} maxLength={2000} onChange={(e) => setMessage(e.target.value)} placeholder="Paste the customer's message here, or use a voice note below" data-testid="input-message" /></div>
+            <VoiceInput onTranscript={onTranscript} disabled={enquiry.isPending} />
+            <button className="btn btn-primary w-full mt-4" disabled={!message.trim() || !customer.trim() || enquiry.isPending} onClick={() => analyse()} data-testid="button-analyse">
               {enquiry.isPending ? <Loader2 className="spin" /> : <Sparkles />} {enquiry.isPending ? "Analysing enquiry" : "Analyse Enquiry"}
             </button>
-            {enquiry.isError && <div className="mt-3"><ErrorBox error={enquiry.error} onRetry={analyse} /></div>}
+            {enquiry.isError && <div className="mt-3"><ErrorBox error={enquiry.error} onRetry={() => analyse()} /></div>}
           </section>
           <RecentActivity />
         </div>
@@ -209,6 +223,26 @@ export default function Workspace() {
         </div>
       </div>
       {printDoc && <PrintableQuoteModal q={printDoc} onClose={() => setPrintDoc(null)} />}
+    </div>
+  );
+}
+
+/** Shows where the text in the message box came from, so nobody mistakes a simulated transcript for a real one. */
+function VoiceTranscriptNotice({ voice, edited }: { voice: TranscriptionResult; edited: boolean }) {
+  const simulated = voice.mode === "simulated";
+  return (
+    <div className={`voice-notice ${simulated ? "simulated" : ""}`} data-testid="voice-transcript-notice">
+      <Mic size={14} />
+      <div className="min-w-0">
+        <div>
+          <strong data-testid="text-voice-label">{voice.label}</strong>
+          <span className="voice-notice-meta"> · {voice.fileName ?? voice.provider}{voice.durationSeconds ? ` · ${Math.round(voice.durationSeconds)}s` : ""}</span>
+        </div>
+        <div data-testid="text-voice-note">{voice.note}</div>
+        <div className="voice-notice-hint">
+          {edited ? "You edited the transcript. Click Analyse Enquiry to re-check with your changes." : "Review the words below. Edit them and click Analyse Enquiry again if anything is wrong."}
+        </div>
+      </div>
     </div>
   );
 }

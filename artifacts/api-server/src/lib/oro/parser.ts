@@ -59,10 +59,12 @@ function extractQuantity(text: string): number | null {
     new RegExp(`(?<![\\d.])${NUM}\\s*(?:x\\s*)?\\d(?:\\.\\d)?\\s*hp\\b`, "i"),
     // Chinese: 一台, 两台, 3台 ...
     /(?<![\d.])([一二两三四五六七八九十]|\d{1,3})\s*(?:台|个|架|部|粒)/,
+    // A count written straight before the service: "one chemical wash", "a chemical wash", "two servicing".
+    new RegExp(`(?<![\\d.\\w])(${NUM.slice(1, -1)}|an?)\\s+(?:chemical\\s*(?:wash|clean)\\w*|servic(?:e|es|ing))\\b`, "i"),
   ];
   for (const pattern of patterns) {
     const m = pattern.exec(text);
-    if (m?.[1]) return toNumber(m[1]);
+    if (m?.[1]) return /^an?$/i.test(m[1]) ? 1 : toNumber(m[1]);
   }
   return null;
 }

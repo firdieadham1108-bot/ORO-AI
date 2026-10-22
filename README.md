@@ -68,6 +68,7 @@ flowchart LR
 | Database | SQLite, using Node's built-in `node:sqlite` (4 tables: `staff`, `capacity_blocks`, `quotes`, `activity_log`) |
 | API contract | OpenAPI (`lib/api-spec/openapi.yaml`), with generated React Query hooks and Zod validation |
 | Orbyte integration | Mock adapters only. See [`orbyte-api-assumptions.md`](orbyte-api-assumptions.md) |
+| Voice input | Browser speech recognition / audio recorder; optional OpenAI speech-to-text; labelled simulated transcript when no key is set |
 | Tests | Node's built-in test runner (`node --test`) |
 | Package manager | pnpm workspaces (monorepo) |
 
@@ -76,6 +77,7 @@ flowchart LR
 | What | File |
 |---|---|
 | Enquiry reading (EN / BM / Chinese keywords) | `artifacts/api-server/src/lib/oro/parser.ts` |
+| Voice-to-Quote (transcription only) | `artifacts/api-server/src/lib/oro/voice.ts`, `artifacts/oro-ai/src/components/voice-input.tsx` |
 | Price list | `artifacts/api-server/src/lib/oro/services.ts` |
 | Crew rules, feasibility, alternative dates | `artifacts/api-server/src/lib/oro/scheduling.ts`, `availability.ts` |
 | Manager approval and double-booking protection | `artifacts/api-server/src/lib/oro/approval.ts`, `quotes.ts` |
@@ -109,8 +111,30 @@ To share it with judges, use Replit's **Publish** button. Judges only need the p
 5. Click **Approve Quotation & Confirm Slot** on Monday, then **View Printable Quotation** → **Print / Save PDF**.
 6. Click **Simulate Orbyte Event: Approve Bala's Emergency Leave (Mon, 26 Oct)**. A red **COMMITMENT AT RISK** card recommends **Chong**.
 7. Click **Approve Recovery & Update Orbyte Work**. The crew becomes Chong + Mei, and the activity log records the swap.
-8. Optional: try Scenarios 2-4 (Bahasa Melayu multi-service, Chinese enquiry, missing information).
+8. Optional: click **Simulate 10s Contractor Voice Note** (Voice-to-Quote). Wait about 9 seconds, or click Skip, and the RM310 servicing quote appears.
+9. Optional: try Scenarios 2-4 (Bahasa Melayu multi-service, Chinese enquiry, missing information).
    Click **Reset Demo State** before each one, because Scenario 1's booking uses up Monday's crew.
+
+### Voice-to-Quote (optional feature A)
+
+Under the message box there is a **Voice Note / Audio Input** bar with three buttons:
+
+- **Simulate 10s Contractor Voice Note** plays a short synthetic voice note: *"Boss, client at Cheras Condo wants servicing for two 1.5HP aircons and a chemical wash this Monday, 26 October."*
+  Its words go into the message box, labelled **Simulated Demo Transcription**, and the normal analysis runs: 2 × RM80 + 1 × RM150 = **RM310**.
+- **Upload Audio File (.mp3 / .m4a / .wav)**: to test it, download the sample with the **"Sample .mp3 for upload test"** link, then upload it.
+- **Record Voice Note** uses the browser's speech recognition, or the audio recorder if that isn't available. The browser must allow the microphone. Inside the Replit preview pane it is usually blocked, so open the app in its own tab.
+
+The voice layer only produces text. You can edit the text, and it goes through **the same** extraction, pricing and scheduling code as a typed message.
+Every transcription is recorded in the activity log as `VOICE_TRANSCRIBED`.
+
+**Real transcription is optional and paid.** It is used only for uploaded or recorded files, and only when a key is configured:
+
+- `OPENAI_API_KEY` as a Replit **Secret** (model `whisper-1`, OpenAI list price about **US$0.006 per minute** of audio), or
+- Replit's built-in OpenAI integration (model `gpt-4o-mini-transcribe`, about **US$0.003 per minute**, deducted from Replit credits).
+
+A 10-second voice note costs well under one US cent. Check current prices before relying on these figures.
+Without a key, or if the service fails, the app shows the demo sample's words with the **Simulated Demo Transcription** label.
+It never pretends to have heard a file it could not transcribe. Typing the message always works as a fallback.
 
 ### Running outside Replit
 
@@ -148,7 +172,14 @@ npm test
 | 9 | Manglish / BM | *"Boss, Friday boleh pasang 6 biji 1.5HP dekat Cheras?"* → 6 × 1.5HP install, Fri 23 Oct, Cheras |
 | 10 | Leave-change detection + recovery | Bala's approved Monday leave flags the job **AT_RISK** and recommends **Chong**; only the manager can approve the swap |
 
-Two extra checks also run: recovery skips a technician who is already booked, and preset scenarios 2 and 3 behave as expected.
+Four extra checks also run:
+
+- recovery skips a technician who is already booked
+- preset scenarios 2 and 3 behave as expected
+- the simulated voice note is labelled, logged as `VOICE_TRANSCRIBED` and quoted at RM310 by the same pipeline
+- voice uploads without a key are clearly labelled as simulated, and bad files are refused
+
+The test server always runs **without** speech keys, so results are the same on every machine.
 
 ---
 

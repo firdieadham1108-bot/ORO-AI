@@ -1,0 +1,9 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "dXVW066Vmkzjo3durxgPb"
+uri = "file://artifacts/oro-ai/public/samples/contractor-voice-note-cheras-condo.mp3"
+type = "audio"
+title = "contractor voice note"
+description = "Text-to-speech audio: Boss, client at Cheras Condo wants servicing for two 1.5HP aircons... and a chemical wash this Monday, 26 October."

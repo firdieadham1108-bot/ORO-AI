@@ -45,3 +45,8 @@ export * from './service';
 export * from './staffAvailability';
 export * from './staffAvailabilityDay';
 export * from './staffAvailabilityStatus';
+export * from './transcriptionInput';
+export * from './transcriptionInputSource';
+export * from './transcriptionResult';
+export * from './transcriptionResultMode';
+export * from './transcriptionResultSource';

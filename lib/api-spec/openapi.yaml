@@ -114,6 +114,42 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /enquiry/transcribe:
+    post:
+      operationId: transcribeVoiceNote
+      tags: [oro]
+      summary: Turn a voice note into editable enquiry text
+      description: >
+        Transcribes an uploaded or recorded audio file with OpenAI speech-to-text when a key is
+        configured. Without a key (or for the built-in demo sample) it returns a clearly labelled
+        "Simulated Demo Transcription". Browser speech-recognition results are passed through.
+        Every call is logged as VOICE_TRANSCRIBED. The transcript is NOT analysed here: the web app
+        puts it in the enquiry text box and then calls /enquiry, the same pipeline as typed text.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TranscriptionInput"
+      responses:
+        "200":
+          description: Transcript text and how it was produced
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TranscriptionResult"
+        "400":
+          description: Invalid request (unknown sample, unsupported file type, file too large)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: The speech-to-text service heard no words in the audio
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /quotes:
     get:
       operationId: listQuotes
@@ -387,6 +423,30 @@ components:
       properties:
         message: { type: string, minLength: 1, maxLength: 2000 }
       required: [message]
+    TranscriptionInput:
+      type: object
+      properties:
+        source: { type: string, enum: [sample, upload, recording, browser_speech] }
+        sampleId: { type: string, maxLength: 80 }
+        fileName: { type: string, maxLength: 200 }
+        mimeType: { type: string, maxLength: 100 }
+        audioBase64: { type: string, maxLength: 14000000 }
+        transcript: { type: string, maxLength: 2000 }
+        durationSeconds: { type: number, minimum: 0, maximum: 3600 }
+      required: [source]
+    TranscriptionResult:
+      type: object
+      properties:
+        transcript: { type: string }
+        mode: { type: string, enum: [openai, simulated, browser] }
+        label: { type: string }
+        provider: { type: string }
+        source: { type: string, enum: [sample, upload, recording, browser_speech] }
+        fileName: { type: ["string", "null"] }
+        sampleId: { type: ["string", "null"] }
+        durationSeconds: { type: ["number", "null"] }
+        note: { type: string }
+      required: [transcript, mode, label, provider, source, fileName, sampleId, durationSeconds, note]
     EnquiryAnalysis:
       type: object
       properties:

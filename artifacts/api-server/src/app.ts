@@ -26,6 +26,8 @@ app.use(
   }),
 );
 app.use(cors());
+// Voice notes arrive as base64 JSON (up to 10 MB of audio); every other route keeps the small default limit.
+app.use("/api/enquiry/transcribe", express.json({ limit: "15mb" }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

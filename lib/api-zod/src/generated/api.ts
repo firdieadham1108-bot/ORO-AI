@@ -213,6 +213,48 @@ export const ProcessEnquiryResponse = zod.object({
 
 
 /**
+ * Transcribes an uploaded or recorded audio file with OpenAI speech-to-text when a key is configured. Without a key (or for the built-in demo sample) it returns a clearly labelled "Simulated Demo Transcription". Browser speech-recognition results are passed through. Every call is logged as VOICE_TRANSCRIBED. The transcript is NOT analysed here: the web app puts it in the enquiry text box and then calls /enquiry, the same pipeline as typed text.
+ * @summary Turn a voice note into editable enquiry text
+ */
+export const transcribeVoiceNoteBodySampleIdMax = 80;
+
+export const transcribeVoiceNoteBodyFileNameMax = 200;
+
+export const transcribeVoiceNoteBodyMimeTypeMax = 100;
+
+export const transcribeVoiceNoteBodyAudioBase64Max = 14000000;
+
+export const transcribeVoiceNoteBodyTranscriptMax = 2000;
+
+export const transcribeVoiceNoteBodyDurationSecondsMin = 0;
+export const transcribeVoiceNoteBodyDurationSecondsMax = 3600;
+
+
+
+export const TranscribeVoiceNoteBody = zod.object({
+  "source": zod.enum(['sample', 'upload', 'recording', 'browser_speech']),
+  "sampleId": zod.string().max(transcribeVoiceNoteBodySampleIdMax).optional(),
+  "fileName": zod.string().max(transcribeVoiceNoteBodyFileNameMax).optional(),
+  "mimeType": zod.string().max(transcribeVoiceNoteBodyMimeTypeMax).optional(),
+  "audioBase64": zod.string().max(transcribeVoiceNoteBodyAudioBase64Max).optional(),
+  "transcript": zod.string().max(transcribeVoiceNoteBodyTranscriptMax).optional(),
+  "durationSeconds": zod.number().min(transcribeVoiceNoteBodyDurationSecondsMin).max(transcribeVoiceNoteBodyDurationSecondsMax).optional()
+})
+
+export const TranscribeVoiceNoteResponse = zod.object({
+  "transcript": zod.string(),
+  "mode": zod.enum(['openai', 'simulated', 'browser']),
+  "label": zod.string(),
+  "provider": zod.string(),
+  "source": zod.enum(['sample', 'upload', 'recording', 'browser_speech']),
+  "fileName": zod.string().nullable(),
+  "sampleId": zod.string().nullable(),
+  "durationSeconds": zod.number().nullable(),
+  "note": zod.string()
+})
+
+
+/**
  * @summary List quotations, newest first
  */
 export const ListQuotesResponseItem = zod.object({

@@ -35,7 +35,9 @@ import type {
   RecoveryInput,
   ResetResult,
   Service,
-  StaffAvailabilityDay
+  StaffAvailabilityDay,
+  TranscriptionInput,
+  TranscriptionResult
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -478,6 +480,95 @@ export const useProcessEnquiry = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getProcessEnquiryMutationOptions(options));
+    }
+
+export const getTranscribeVoiceNoteUrl = () => {
+
+
+
+
+  return `/api/enquiry/transcribe`
+}
+
+/**
+ * Transcribes an uploaded or recorded audio file with OpenAI speech-to-text when a key is configured. Without a key (or for the built-in demo sample) it returns a clearly labelled "Simulated Demo Transcription". Browser speech-recognition results are passed through. Every call is logged as VOICE_TRANSCRIBED. The transcript is NOT analysed here: the web app puts it in the enquiry text box and then calls /enquiry, the same pipeline as typed text.
+ * @summary Turn a voice note into editable enquiry text
+ */
+export const transcribeVoiceNote = async (transcriptionInput: TranscriptionInput, options?: Parameters<typeof customFetch>[1]): Promise<TranscriptionResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<TranscriptionResult>(getTranscribeVoiceNoteUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(transcriptionInput)
+  }
+);}
+
+
+
+
+
+export const getTranscribeVoiceNoteMutationKey = () => ['transcribeVoiceNote'] as const;
+
+export const getTranscribeVoiceNoteMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof transcribeVoiceNote>>, TError,TranscribeVoiceNoteMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof transcribeVoiceNote>>, TError,TranscribeVoiceNoteMutationVariables, TContext> => {
+
+const mutationKey = getTranscribeVoiceNoteMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof transcribeVoiceNote>>, TranscribeVoiceNoteMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  transcribeVoiceNote(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type TranscribeVoiceNoteMutationResult = NonNullable<Awaited<ReturnType<typeof transcribeVoiceNote>>>
+    export type TranscribeVoiceNoteMutationBody = BodyType<TranscriptionInput>
+    export type TranscribeVoiceNoteMutationError = ErrorType<ErrorResponse>
+    export type TranscribeVoiceNoteMutationVariables = {data: BodyType<TranscriptionInput>}
+
+    /**
+ * @summary Turn a voice note into editable enquiry text
+ */
+export const useTranscribeVoiceNote = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof transcribeVoiceNote>>, TError,TranscribeVoiceNoteMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof transcribeVoiceNote>>,
+        TError,
+        TranscribeVoiceNoteMutationVariables,
+        TContext
+      > => {
+      return useMutation(getTranscribeVoiceNoteMutationOptions(options));
     }
 
 export const getListQuotesUrl = () => {

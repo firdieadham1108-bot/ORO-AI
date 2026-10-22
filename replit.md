@@ -6,7 +6,7 @@ Quotation and staffing-availability workspace for the fictional CoolAir Services
 
 - API server: workflow `artifacts/api-server: API Server`; web app: `artifacts/oro-ai: web`
 - `pnpm run typecheck` — full typecheck
-- `npm test` — 10 required tests against an isolated test server + temp database
+- `npm test` — 10 required tests (+ extra and voice checks) against an isolated test server + temp database (speech keys blanked)
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate hooks and Zod schemas after editing `lib/api-spec/openapi.yaml`
 - Quick check: `curl localhost:80/api/staff/availability?date=2026-10-23`
 
@@ -26,6 +26,7 @@ Quotation and staffing-availability workspace for the fictional CoolAir Services
 - `artifacts/api-server/src/lib/oro/approval.ts` + `quotes.ts` — `POST /api/approvals` re-checks the chosen date, saves an approved quote, reserves the crew (assignment rows in capacity_blocks with `quote_id`) and logs it
 - `artifacts/api-server/src/lib/oro/risk.ts` — `POST /api/orbyte-sim/emergency-leave` (Bala, Mon 26 Oct, eLeave LV-0499), `GET /api/commitments`, `POST /api/commitments/:id/recover` (manager only, re-checked in a transaction)
 - `artifacts/oro-ai/src/components/risk.tsx` — simulation bar and red COMMITMENT AT RISK / recovery card
+- Voice-to-Quote: `artifacts/api-server/src/lib/oro/voice.ts` (`POST /api/enquiry/transcribe`, logs `VOICE_TRANSCRIBED`) + `artifacts/oro-ai/src/components/voice-input.tsx`. Sample clip: `artifacts/oro-ai/public/samples/contractor-voice-note-cheras-condo.mp3` (synthetic TTS voice).
 
 ## Architecture decisions
 
@@ -37,8 +38,9 @@ Quotation and staffing-availability workspace for the fictional CoolAir Services
 - Quote numbers are `ORO-<1022+id>`, so the first quote after a reset is ORO-1023.
 - The manager check on approval and recovery is a name lookup (Faizal, role Business Manager), not real login. The header role switch (Sales Staff (Mei) / Manager (Faizal), kept in localStorage) sends that name; the server answers 403 for non-managers.
 - Parsing understands English, Bahasa Melayu and Chinese keywords. A message with several services becomes several line items; a quote's total is the sum of its lines, and the installation line (if any) sets the crew rule.
+- Voice layer returns text only; the web app puts it in the editable message box and calls the normal `/enquiry`. STT provider order: `OPENAI_API_KEY` (whisper-1) > Replit AI Integrations env (gpt-4o-mini-transcribe) > labelled "Simulated Demo Transcription". The sample button is always simulated; a failed STT call falls back to the labelled sample, never silently. Audio is sent as base64 JSON (15 MB body limit on that route only); nothing is stored.
 - Only 1.0HP and 1.5HP installation are on the price list. Any other size (e.g. 2.0HP) gives `needs_clarification` instead of a made-up price.
 
 ## Scope
 
-Phases 1-3, manager approval (reserves the crew), Sprint 4 (Optional C+D): simulated eLeave event, at-risk detection and manager-approved recovery, and Sprint 5: Reset Demo State button, demo role switch with lock badges, 4 preset scenario chips, printable quotation modal. One workspace page. Not built: voice-to-quote, PWA, real auth.
+Phases 1-3, manager approval (reserves the crew), Sprint 4 (Optional C+D): simulated eLeave event, at-risk detection and manager-approved recovery, and Sprint 5: Reset Demo State button, demo role switch with lock badges, 4 preset scenario chips, printable quotation modal, Sprint 7 (Optional A): Voice-to-Quote input. One workspace page. Not built: PWA, real auth.

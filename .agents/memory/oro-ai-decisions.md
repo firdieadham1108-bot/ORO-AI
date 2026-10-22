@@ -21,3 +21,6 @@ description: Decisions for the ORO AI hackathon prototype (formerly QuoteGuard) 
 - Tests must never reset the user's dev demo data: `npm test` runs against a separate server + temp DB. The user rehearses on the dev data between sessions.
   **Why:** the old test script reset the shared database; the user's own rehearsal state was found in it.
 - Hackathon rules require the Apache 2.0 license (root LICENSE, package.json license field).
+- Voice-to-Quote must never pass off simulated text as a real transcription: every simulated result carries the "Simulated Demo Transcription" label, and an unknown file without a key says it is NOT that file's words.
+  **Why:** the user wants the stage demo to never fail, but the brief demands honesty about simulated parts.
+- Browser test plans for voice/enquiry flows should not press Reset; the user keeps rehearsal state in the dev DB.
