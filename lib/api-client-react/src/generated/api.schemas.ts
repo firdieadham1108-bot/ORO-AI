@@ -469,6 +469,15 @@ export interface ActivityEntry {
   createdAt: string;
 }
 
+export interface OrbyteWallet {
+  balance: number;
+  balanceFormatted: string;
+  startingBalance: number;
+  chargePerTransaction: number;
+  transactionsCharged: number;
+  label: string;
+}
+
 export interface ResetResult {
   message: string;
   staffCount: number;

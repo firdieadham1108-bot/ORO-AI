@@ -8,6 +8,7 @@ import { MockOrbyteApprovalAdapter, MockOrbyteLeaveAdapter, MockOrbytePeopleAdap
 import { addDays, formatLongDate, overlaps, workingWindow } from "./dates";
 import { crewLabel, formatRm, toQuote, type QuoteRow } from "./quotes";
 import { crewRequirementFor, findAlternatives, type CrewMember } from "./scheduling";
+import { chargeTransaction } from "./wallet";
 
 const ELEAVE_ACTOR = "Orbyte eLeave (simulated)";
 const MONITOR_ACTOR = "ORO AI risk monitor";
@@ -285,6 +286,7 @@ export function recoverCommitment(quoteId: number, input: { managerName: string;
       managerLabel,
       "success",
     );
+    chargeTransaction(`approving the recovery swap on ${quote.reference}`);
     return { ok: true, commitment: toCommitment(getQuoteRow(quote.id)!) };
   });
 }

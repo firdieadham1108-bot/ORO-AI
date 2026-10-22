@@ -6,7 +6,7 @@ Quotation and staffing-availability workspace for the fictional CoolAir Services
 
 - API server: workflow `artifacts/api-server: API Server`; web app: `artifacts/oro-ai: web`
 - `pnpm run typecheck` — full typecheck
-- `npm test` — 10 required tests (+ extra and voice checks) against an isolated test server + temp database (speech keys blanked)
+- `npm test` — 10 required tests (+ extra, voice and wallet checks) against an isolated test server + temp database (speech keys blanked)
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate hooks and Zod schemas after editing `lib/api-spec/openapi.yaml`
 - Quick check: `curl localhost:80/api/staff/availability?date=2026-10-23`
 
@@ -27,6 +27,9 @@ Quotation and staffing-availability workspace for the fictional CoolAir Services
 - `artifacts/api-server/src/lib/oro/risk.ts` — `POST /api/orbyte-sim/emergency-leave` (Bala, Mon 26 Oct, eLeave LV-0499), `GET /api/commitments`, `POST /api/commitments/:id/recover` (manager only, re-checked in a transaction)
 - `artifacts/oro-ai/src/components/risk.tsx` — simulation bar and red COMMITMENT AT RISK / recovery card
 - Voice-to-Quote: `artifacts/api-server/src/lib/oro/voice.ts` (`POST /api/enquiry/transcribe`, logs `VOICE_TRANSCRIBED`) + `artifacts/oro-ai/src/components/voice-input.tsx`. Sample clip: `artifacts/oro-ai/public/samples/contractor-voice-note-cheras-condo.mp3` (synthetic TTS voice).
+- Simulated Orbyte Credit Wallet: `artifacts/api-server/src/lib/oro/wallet.ts` (`GET /api/orbyte-sim/wallet`) + `artifacts/oro-ai/src/components/wallet-badge.tsx` (in the demo banner)
+- Price validity (7 days) vs. 30s crew-slot hold: `artifacts/oro-ai/src/components/quote-terms.tsx`, used by the approval card
+- PWA: `artifacts/oro-ai/public/manifest.json`, `public/icons/` (generated from an SVG ring mark, navy `#0F172A`), `public/sw.js` + `offline.html`; meta tags in `index.html`
 
 ## Architecture decisions
 
@@ -39,8 +42,11 @@ Quotation and staffing-availability workspace for the fictional CoolAir Services
 - The manager check on approval and recovery is a name lookup (Faizal, role Business Manager), not real login. The header role switch (Sales Staff (Mei) / Manager (Faizal), kept in localStorage) sends that name; the server answers 403 for non-managers.
 - Parsing understands English, Bahasa Melayu and Chinese keywords. A message with several services becomes several line items; a quote's total is the sum of its lines, and the installation line (if any) sets the crew rule.
 - Voice layer returns text only; the web app puts it in the editable message box and calls the normal `/enquiry`. STT provider order: `OPENAI_API_KEY` (whisper-1) > Replit AI Integrations env (gpt-4o-mini-transcribe) > labelled "Simulated Demo Transcription". The sample button is always simulated; a failed STT call falls back to the labelled sample, never silently. Audio is sent as base64 JSON (15 MB body limit on that route only); nothing is stored.
+- Wallet balance = 25.00 - 0.10 x (number of `orbyte_credits_deducted` rows in activity_log); charged inside the approval/recovery transaction, so refusals cost nothing and Reset restores 25.00. No extra table.
+- The 30s crew hold is front-end only (labelled "Demo Simulation"); it locks nothing. After expiry the approve buttons stay disabled until "Re-verify Availability" re-runs `/enquiry`. Real protection remains the server re-check at approval.
+- Service worker is online-first (navigation fallback to `offline.html`, no data caching) and registered only in the production build, so it never touches the Vite dev server.
 - Only 1.0HP and 1.5HP installation are on the price list. Any other size (e.g. 2.0HP) gives `needs_clarification` instead of a made-up price.
 
 ## Scope
 
-Phases 1-3, manager approval (reserves the crew), Sprint 4 (Optional C+D): simulated eLeave event, at-risk detection and manager-approved recovery, and Sprint 5: Reset Demo State button, demo role switch with lock badges, 4 preset scenario chips, printable quotation modal, Sprint 7 (Optional A): Voice-to-Quote input. One workspace page. Not built: PWA, real auth.
+Phases 1-3, manager approval (reserves the crew), Sprint 4 (Optional C+D): simulated eLeave event, at-risk detection and manager-approved recovery, and Sprint 5: Reset Demo State button, demo role switch with lock badges, 4 preset scenario chips, printable quotation modal, Sprint 7 (Optional A): Voice-to-Quote input, Sprint 8: simulated Orbyte Credit Wallet, price validity vs. crew-hold timer, mobile layout + installable PWA (Optional B). One workspace page. Not built: real auth, offline mode, separate pages/mobile nav menu.

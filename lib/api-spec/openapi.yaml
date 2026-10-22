@@ -266,6 +266,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/LeaveEventResult"
+  /orbyte-sim/wallet:
+    get:
+      operationId: getOrbyteWallet
+      tags: [oro]
+      summary: Simulated Orbyte Credit Wallet (usage-based pricing demo, not real money)
+      description: >
+        Starts at 25.00 credits. Each manager approval of a quotation or of a recovery swap costs 0.10 credits
+        and is recorded in the activity log. Reset Demo State restores 25.00.
+      responses:
+        "200":
+          description: Current wallet balance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrbyteWallet"
   /commitments:
     get:
       operationId: listCommitments
@@ -704,6 +719,16 @@ components:
         severity: { type: string, enum: [info, success, warning] }
         createdAt: { type: string }
       required: [id, action, description, actor, severity, createdAt]
+    OrbyteWallet:
+      type: object
+      properties:
+        balance: { type: number }
+        balanceFormatted: { type: string }
+        startingBalance: { type: number }
+        chargePerTransaction: { type: number }
+        transactionsCharged: { type: integer }
+        label: { type: string }
+      required: [balance, balanceFormatted, startingBalance, chargePerTransaction, transactionsCharged, label]
     ResetResult:
       type: object
       properties:

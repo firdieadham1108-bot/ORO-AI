@@ -30,6 +30,7 @@ import type {
   GetStaffAvailabilityParams,
   HealthStatus,
   LeaveEventResult,
+  OrbyteWallet,
   Quote,
   QuoteInput,
   RecoveryInput,
@@ -976,6 +977,84 @@ export const useSimulateEmergencyLeave = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getSimulateEmergencyLeaveMutationOptions(options));
     }
+
+export const getGetOrbyteWalletUrl = () => {
+
+
+
+
+  return `/api/orbyte-sim/wallet`
+}
+
+/**
+ * Starts at 25.00 credits. Each manager approval of a quotation or of a recovery swap costs 0.10 credits and is recorded in the activity log. Reset Demo State restores 25.00.
+ * @summary Simulated Orbyte Credit Wallet (usage-based pricing demo, not real money)
+ */
+export const getOrbyteWallet = async ( options?: Parameters<typeof customFetch>[1]): Promise<OrbyteWallet> => {
+
+  return customFetch<OrbyteWallet>(getGetOrbyteWalletUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetOrbyteWalletQueryKey = () => {
+    return [
+    `/api/orbyte-sim/wallet`
+    ] as const;
+    }
+
+
+export const getGetOrbyteWalletQueryOptions = <TData = Awaited<ReturnType<typeof getOrbyteWallet>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrbyteWallet>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetOrbyteWalletQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getOrbyteWallet>>> = ({ signal }) => getOrbyteWallet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOrbyteWallet>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetOrbyteWalletQueryResult = NonNullable<Awaited<ReturnType<typeof getOrbyteWallet>>>
+export type GetOrbyteWalletQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Simulated Orbyte Credit Wallet (usage-based pricing demo, not real money)
+ */
+
+export function useGetOrbyteWallet<TData = Awaited<ReturnType<typeof getOrbyteWallet>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOrbyteWallet>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetOrbyteWalletQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getListCommitmentsUrl = () => {
 

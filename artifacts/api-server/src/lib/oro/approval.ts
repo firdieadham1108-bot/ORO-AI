@@ -5,6 +5,7 @@ import { formatLongDate, isValidDateString } from "./dates";
 import { insertQuote, type QuoteRow } from "./quotes";
 import { checkSchedule } from "./scheduling";
 import { findService, type ServiceItem } from "./services";
+import { chargeTransaction } from "./wallet";
 
 export const MANAGER = "Faizal (Manager)";
 
@@ -88,5 +89,6 @@ function approveChecked(
     },
     MANAGER,
   );
+  chargeTransaction(`approving quotation ${quote.reference}`);
   return { ok: true, quote };
 }

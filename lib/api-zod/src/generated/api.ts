@@ -519,6 +519,20 @@ export const SimulateEmergencyLeaveResponse = zod.object({
 
 
 /**
+ * Starts at 25.00 credits. Each manager approval of a quotation or of a recovery swap costs 0.10 credits and is recorded in the activity log. Reset Demo State restores 25.00.
+ * @summary Simulated Orbyte Credit Wallet (usage-based pricing demo, not real money)
+ */
+export const GetOrbyteWalletResponse = zod.object({
+  "balance": zod.number(),
+  "balanceFormatted": zod.string(),
+  "startingBalance": zod.number(),
+  "chargePerTransaction": zod.number(),
+  "transactionsCharged": zod.number().int(),
+  "label": zod.string()
+})
+
+
+/**
  * @summary Approved commitments with risk status and recommended recovery (at-risk first)
  */
 export const ListCommitmentsResponseItem = zod.object({

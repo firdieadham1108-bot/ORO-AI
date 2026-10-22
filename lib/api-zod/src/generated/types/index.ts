@@ -26,6 +26,7 @@ export * from './getStaffAvailabilityParams';
 export * from './healthStatus';
 export * from './leaveEventInfo';
 export * from './leaveEventResult';
+export * from './orbyteWallet';
 export * from './parsedItem';
 export * from './parsedItemServiceKind';
 export * from './pricing';

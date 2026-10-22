@@ -4,6 +4,7 @@ import {
   AnalyseEnquiryResponse,
   ApproveQuotationBody,
   CreateQuoteBody,
+  GetOrbyteWalletResponse,
   GetQuoteParams,
   GetQuoteResponse,
   GetStaffAvailabilityQueryParams,
@@ -32,6 +33,7 @@ import { logEnquiryAnalysed, processEnquiry } from "../lib/oro/enquiry";
 import { parseEnquiry } from "../lib/oro/parser";
 import { findService, SERVICES, senToRm } from "../lib/oro/services";
 import { transcribeVoiceNote } from "../lib/oro/voice";
+import { getWallet } from "../lib/oro/wallet";
 
 const router: IRouter = Router();
 const SALESPERSON = "Salesperson (demo)";
@@ -162,6 +164,10 @@ router.get("/quotes/:id", (req, res): void => {
 
 router.post("/orbyte-sim/emergency-leave", (_req, res): void => {
   res.json(SimulateEmergencyLeaveResponse.parse(simulateEmergencyLeave()));
+});
+
+router.get("/orbyte-sim/wallet", (_req, res): void => {
+  res.json(GetOrbyteWalletResponse.parse(getWallet()));
 });
 
 router.get("/commitments", (_req, res): void => {

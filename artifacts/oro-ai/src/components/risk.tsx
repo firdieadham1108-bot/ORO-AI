@@ -6,6 +6,7 @@ import {
   useRecoverCommitment,
   getListCommitmentsQueryKey,
   getListActivityQueryKey,
+  getGetOrbyteWalletQueryKey,
 } from "@workspace/api-client-react";
 import type { Commitment } from "@workspace/api-client-react";
 import { AlertOctagon, CalendarX2, CheckCircle2, Loader2, Lock, Radio, ShieldCheck, UserRoundCheck, XCircle } from "lucide-react";
@@ -86,6 +87,7 @@ function AtRiskCard({ commitment: c, onRecovered }: { commitment: Commitment; on
         onSettled: () => {
           qc.invalidateQueries({ queryKey: getListCommitmentsQueryKey() });
           qc.invalidateQueries({ queryKey: getListActivityQueryKey() });
+          qc.invalidateQueries({ queryKey: getGetOrbyteWalletQueryKey() });
         },
       },
     );

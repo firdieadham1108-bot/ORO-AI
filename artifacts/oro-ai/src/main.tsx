@@ -15,3 +15,13 @@ createRoot(document.getElementById('root')!, {
     <App />
   </ErrorBoundary>,
 );
+
+// Installable app (PWA): register the online-first service worker in the published build only,
+// so it never interferes with the development server. It shows an offline page; it caches no data.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch((err) => {
+      console.warn('Service worker registration failed', err);
+    });
+  });
+}

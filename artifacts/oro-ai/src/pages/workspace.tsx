@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useProcessEnquiry, useApproveQuotation, useListActivity, useListCommitments, getListActivityQueryKey, getListCommitmentsQueryKey } from "@workspace/api-client-react";
+import { useProcessEnquiry, useApproveQuotation, useListActivity, useListCommitments, getListActivityQueryKey, getListCommitmentsQueryKey, getGetOrbyteWalletQueryKey } from "@workspace/api-client-react";
 import type { EnquiryResult, ScheduleCheck, Quote, Commitment, TranscriptionResult } from "@workspace/api-client-react";
-import { Sparkles, Loader2, AlertTriangle, ShieldCheck, FileText, RotateCcw, Inbox, CheckCircle2, Lock, Mic } from "lucide-react";
+import { Sparkles, Loader2, AlertTriangle, ShieldCheck, FileText, RotateCcw, Inbox, CheckCircle2, Lock, Mic, TimerOff } from "lucide-react";
 import { ErrorBox } from "@/components/shell";
 import { RiskAlerts, SimulationBar } from "@/components/risk";
 import { PrintableQuoteModal, QuoteDocument, type QuoteDocData } from "@/components/quote-document";
 import { LockBadge } from "@/components/lock-badge";
 import { VoiceInput } from "@/components/voice-input";
+import { QuoteTerms, useHoldTimer, HOLD_SECONDS } from "@/components/quote-terms";
 import { useRole } from "@/lib/role";
 import { rm, longDate, myTime } from "@/lib/util";
 
@@ -110,6 +111,9 @@ export default function Workspace() {
   const [recovered, setRecovered] = useState<Commitment | null>(null);
   const [printDoc, setPrintDoc] = useState<QuoteDocData | null>(null);
   const [voice, setVoice] = useState<TranscriptionResult | null>(null);
+  // Changes on every analysis, so the approval card (and its crew-hold timer) starts fresh.
+  const [resultId, setResultId] = useState(0);
+  const resultRef = useRef<HTMLDivElement>(null);
   const commitments = useListCommitments();
   // Show the latest saved version of the approved quote (crew or risk status may change after approval).
   const liveQuote = quote ? (commitments.data?.find((c) => c.quote.id === quote.id)?.quote ?? quote) : null;
@@ -117,7 +121,18 @@ export default function Workspace() {
   const analyse = (text: string = message) => {
     approve.reset();
     setQuote(null);
-    enquiry.mutate({ data: { message: text } }, { onSuccess: (r) => { setResult(r); setSentMessage(text); qc.invalidateQueries({ queryKey: getListActivityQueryKey() }); } });
+    enquiry.mutate({ data: { message: text } }, {
+      onSuccess: (r) => {
+        setResult(r);
+        setResultId((n) => n + 1);
+        setSentMessage(text);
+        qc.invalidateQueries({ queryKey: getListActivityQueryKey() });
+        // On phones the result sits below the enquiry form: bring it into view.
+        if (window.matchMedia("(max-width: 1023px)").matches) {
+          requestAnimationFrame(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+        }
+      },
+    });
   };
   // Voice-to-Quote handoff: the transcript goes into the editable message box, then the normal analysis runs on it.
   const onTranscript = (t: TranscriptionResult) => {
@@ -141,6 +156,7 @@ export default function Workspace() {
       onSuccess: (q) => {
         setQuote(q);
         qc.invalidateQueries({ queryKey: getListCommitmentsQueryKey() });
+        qc.invalidateQueries({ queryKey: getGetOrbyteWalletQueryKey() });
       },
       onSettled: () => { setApprovingDate(null); qc.invalidateQueries({ queryKey: getListActivityQueryKey() }); },
     });
@@ -157,8 +173,8 @@ export default function Workspace() {
       <SimulationBar />
       <RiskAlerts recovered={recovered} onRecovered={setRecovered} />
       <div className="grid gap-5 lg:grid-cols-[minmax(0,.9fr)_minmax(0,1.3fr)] items-start">
-        <div className="grid gap-5 no-print">
-          <section className="panel">
+        <div className="contents lg:grid gap-5 no-print">
+          <section className="panel order-1">
             <div className="panel-heading"><div><h2>Customer enquiry</h2><p>Paste from WhatsApp, send a voice note, or pick a test scenario.</p></div></div>
             <div className="field mb-3"><label htmlFor="cust">Customer name</label>
               <input id="cust" value={customer} maxLength={160} onChange={(e) => setCustomer(e.target.value)} data-testid="input-customer" /></div>
@@ -191,7 +207,7 @@ export default function Workspace() {
           <RecentActivity />
         </div>
 
-        <div className="grid gap-5">
+        <div className="grid gap-5 order-2 scroll-mt-14" ref={resultRef}>
           {enquiry.isPending ? (
             <div className="panel grid gap-3"><div className="skeleton w-1/3" /><div className="skeleton-box" /><div className="grid sm:grid-cols-2 gap-3"><div className="skeleton-box h-48" /><div className="skeleton-box h-48" /></div></div>
           ) : liveQuote ? (
@@ -204,7 +220,10 @@ export default function Workspace() {
             </>
           ) : result ? (
             <ApprovalCard
+              key={resultId}
               result={result}
+              onReverify={() => analyse(sentMessage)}
+              reverifying={enquiry.isPending}
               onApprove={doApprove}
               onViewDraft={() => { const d = draftDoc(result, customer); if (d) setPrintDoc(d); }}
               approvingDate={approvingDate}
@@ -247,8 +266,9 @@ function VoiceTranscriptNotice({ voice, edited }: { voice: TranscriptionResult; 
   );
 }
 
-function ApprovalCard({ result, onApprove, onViewDraft, approvingDate, error, canApprove }: {
-  result: EnquiryResult; onApprove: (o: ScheduleCheck) => void; onViewDraft: () => void; approvingDate: string | null; error: unknown; canApprove: boolean;
+function ApprovalCard({ result, onApprove, onReverify, reverifying, onViewDraft, approvingDate, error, canApprove }: {
+  result: EnquiryResult; onApprove: (o: ScheduleCheck) => void; onReverify: () => void; reverifying: boolean;
+  onViewDraft: () => void; approvingDate: string | null; error: unknown; canApprove: boolean;
 }) {
   const st = STATUS[result.status] ?? STATUS.needs_verification!;
   const a = result.analysis;
@@ -256,6 +276,9 @@ function ApprovalCard({ result, onApprove, onViewDraft, approvingDate, error, ca
   const optA = result.requestedSchedule;
   const optB = optA && optA.verdict !== "feasible" ? result.alternatives[0] : undefined;
   const showOptions = result.status !== "needs_clarification" && optA;
+  // A quote is "generated" once it is priced; a crew slot can only be held when one option is feasible.
+  const hasSlot = !!(showOptions && p && [optA, optB].some((o) => o?.verdict === "feasible"));
+  const hold = useHoldTimer(HOLD_SECONDS, hasSlot);
   return (
     <section className="panel" data-testid="card-approval" style={{ animation: "fade-up .3s ease both" }}>
       <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
@@ -296,10 +319,12 @@ function ApprovalCard({ result, onApprove, onViewDraft, approvingDate, error, ca
         </div>
       )}
 
+      {p && showOptions && <QuoteTerms hasSlot={hasSlot} hold={hold} onReverify={onReverify} reverifying={reverifying} />}
+
       {showOptions && (
         <div className={`grid gap-3 mt-4 ${optB ? "sm:grid-cols-2" : ""}`}>
-          <OptionCard label="Option A · Requested" opt={optA!} onApprove={onApprove} approvingDate={approvingDate} canApprove={canApprove && !!p} />
-          {optB && <OptionCard label="Option B · Alternative" opt={optB} onApprove={onApprove} approvingDate={approvingDate} canApprove={canApprove && !!p} />}
+          <OptionCard label="Option A · Requested" opt={optA!} onApprove={onApprove} approvingDate={approvingDate} canApprove={canApprove && !!p} holdExpired={hold.expired} />
+          {optB && <OptionCard label="Option B · Alternative" opt={optB} onApprove={onApprove} approvingDate={approvingDate} canApprove={canApprove && !!p} holdExpired={hold.expired} />}
         </div>
       )}
       {showOptions && (
@@ -365,19 +390,22 @@ function Kv({ k, v }: { k: string; v: string | null | undefined }) {
   );
 }
 
-function OptionCard({ label, opt, onApprove, approvingDate, canApprove }: {
-  label: string; opt: ScheduleCheck; onApprove: (o: ScheduleCheck) => void; approvingDate: string | null; canApprove: boolean;
+function OptionCard({ label, opt, onApprove, approvingDate, canApprove, holdExpired }: {
+  label: string; opt: ScheduleCheck; onApprove: (o: ScheduleCheck) => void; approvingDate: string | null; canApprove: boolean; holdExpired: boolean;
 }) {
   const { isManager } = useRole();
   const v = VERDICT[opt.verdict] ?? VERDICT.needs_verification!;
   const ok = opt.verdict === "feasible";
   const busy = approvingDate === opt.date;
   const locked = ok && !isManager;
+  const stale = ok && holdExpired;
   return (
     <div className={`option-card flex flex-col ${ok ? "feasible" : "unfeasible"}`} style={{ marginTop: 0 }} data-testid={`card-option-${opt.date}`}>
       <div className="eyebrow mb-1">{label}</div>
       <div className="option-head"><span className="text-[15px]" style={{ fontFamily: "Manrope" }}>{longDate(opt.date)}</span></div>
-      <div className="mt-2"><span className={`badge ${v.cls}`}>{v.label}</span></div>
+      <div className="mt-2">
+        {stale ? <span className="badge badge-amber !normal-case" data-testid={`badge-stale-${opt.date}`}>Hold expired · re-check needed</span> : <span className={`badge ${v.cls}`}>{v.label}</span>}
+      </div>
       {opt.crew.length > 0 && (
         <div className="crew-list">
           {opt.crew.map((c) => (
@@ -391,13 +419,13 @@ function OptionCard({ label, opt, onApprove, approvingDate, canApprove }: {
       <p className="flex-1">{opt.explanation}</p>
       {locked && <LockBadge className="mt-3" />}
       <button
-        className={`btn w-full mt-2 !whitespace-normal !h-auto !py-2 ${ok && !locked ? "btn-primary" : ""}`}
-        disabled={!ok || locked || !canApprove || approvingDate !== null}
+        className={`btn w-full mt-2 !whitespace-normal !h-auto !py-2 ${ok && !locked && !stale ? "btn-primary" : ""}`}
+        disabled={!ok || locked || stale || !canApprove || approvingDate !== null}
         onClick={() => onApprove(opt)}
         data-testid={`button-approve-${opt.date}`}
       >
-        {busy ? <Loader2 className="spin" /> : locked ? <Lock /> : ok ? <CheckCircle2 /> : null}
-        {ok ? "Approve Quotation & Confirm Slot" : `${opt.weekday} not available`}
+        {busy ? <Loader2 className="spin" /> : locked ? <Lock /> : stale ? <TimerOff /> : ok ? <CheckCircle2 /> : null}
+        {stale ? "Re-verify availability before confirming" : ok ? "Approve Quotation & Confirm Slot" : `${opt.weekday} not available`}
       </button>
     </div>
   );
@@ -407,7 +435,7 @@ function RecentActivity() {
   const q = useListActivity();
   const items = q.data?.slice(0, 6) ?? [];
   return (
-    <section className="panel">
+    <section className="panel order-3">
       <div className="panel-heading"><div><h2>Recent activity</h2><p>Newest first.</p></div></div>
       {q.isLoading && <div className="grid gap-3"><div className="skeleton" /><div className="skeleton w-2/3" /><div className="skeleton" /></div>}
       {q.isError && <ErrorBox error={q.error} onRetry={() => q.refetch()} />}

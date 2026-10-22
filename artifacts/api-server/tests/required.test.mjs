@@ -335,3 +335,40 @@ test("Voice - uploads without a speech key give a labelled simulated transcript;
   const voiceLogs = (await activityActions()).filter((a) => a === "VOICE_TRANSCRIBED").length;
   assert.equal(voiceLogs, 3, "only successful transcriptions are logged");
 });
+
+test("Wallet - manager approvals and recovery swaps cost 0.10 Orbyte Credits; refusals are free; reset restores 25.00", async () => {
+  const wallet = async () => (await call("GET", "/orbyte-sim/wallet")).body;
+  const charges = async () =>
+    (await call("GET", "/activity")).body.filter((a) => a.action === "orbyte_credits_deducted").map((a) => a.description);
+
+  assert.equal((await wallet()).balanceFormatted, "25.00", "a fresh demo starts at 25.00 credits");
+
+  // Refused or blocked approvals are not charged.
+  assert.equal((await call("POST", "/approvals", { ...MONDAY_JOB, approverName: "Mei" })).status, 403);
+  assert.equal((await call("POST", "/approvals", { ...MONDAY_JOB, appointmentDate: FRIDAY })).status, 409);
+  assert.equal((await wallet()).balanceFormatted, "25.00", "refused approvals must not cost credits");
+
+  // Manager approves the quotation: -0.10, logged with the exact wording.
+  const approved = await call("POST", "/approvals", MONDAY_JOB);
+  assert.equal(approved.status, 201);
+  const afterApproval = await wallet();
+  assert.equal(afterApproval.balanceFormatted, "24.90");
+  assert.equal(afterApproval.transactionsCharged, 1);
+  const [first] = await charges();
+  assert.match(first, /^0\.10 Orbyte Credits deducted \(Pay-per-transaction\)/);
+  assert.match(first, new RegExp(`${approved.body.reference}.*Balance: 24\\.90 Credits`));
+
+  // Manager approves the recovery swap: another -0.10.
+  await call("POST", "/orbyte-sim/emergency-leave");
+  assert.equal((await call("POST", `/commitments/${approved.body.id}/recover`, { managerName: "Mei" })).status, 403);
+  assert.equal((await wallet()).balanceFormatted, "24.90", "a refused recovery must not cost credits");
+  assert.equal((await call("POST", `/commitments/${approved.body.id}/recover`, { managerName: "Faizal" })).status, 200);
+  assert.equal((await wallet()).balanceFormatted, "24.80");
+  assert.match((await charges())[0], /recovery swap.*Balance: 24\.80 Credits/);
+
+  // Reset Demo State puts the wallet back to 25.00.
+  await call("POST", "/demo/reset", {});
+  const reset = await wallet();
+  assert.equal(reset.balanceFormatted, "25.00");
+  assert.equal(reset.transactionsCharged, 0);
+});

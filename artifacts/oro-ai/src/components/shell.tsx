@@ -1,16 +1,26 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { useResetDemo } from "@workspace/api-client-react";
 import { RotateCcw, AlertTriangle, Loader2, UserRound, ShieldCheck } from "lucide-react";
 import { ROLES, useRole, type RoleKey } from "@/lib/role";
 import { errText } from "@/lib/util";
+import { WalletBadge } from "@/components/wallet-badge";
 
 export function Shell({ children }: { children: ReactNode }) {
   const [msg, setMsg] = useState<{ ok: boolean; t: string } | null>(null);
   const [gen, setGen] = useState(0);
   const qc = useQueryClient();
   const reset = useResetDemo();
+  // The sticky header sits just below the sticky demo banner, whose height changes when it wraps on phones.
+  const bannerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = bannerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => document.documentElement.style.setProperty("--banner-h", `${el.offsetHeight}px`));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const doReset = () => {
     if (!window.confirm("Reset the demo state? All quotes, approvals, leave events and activity go back to the starting data.")) return;
     reset.mutate(undefined, {
@@ -25,7 +35,10 @@ export function Shell({ children }: { children: ReactNode }) {
   };
   return (
     <>
-      <div className="demo-banner" data-testid="text-demo-label">Demo Environment - Simulated Orbyte Data</div>
+      <div className="demo-banner" ref={bannerRef}>
+        <span data-testid="text-demo-label">Demo Environment - Simulated Orbyte Data</span>
+        <WalletBadge />
+      </div>
       <div className="app-shell">
         <div className="workspace solo">
           <header className="topbar !h-auto min-h-[58px] !py-2 flex-wrap gap-2">
@@ -39,7 +52,7 @@ export function Shell({ children }: { children: ReactNode }) {
             <div className="flex items-center gap-2 justify-between sm:justify-end w-full sm:w-auto no-print">
               <RoleSwitch />
               <button className="btn" onClick={doReset} disabled={reset.isPending} data-testid="button-reset-demo">
-                {reset.isPending ? <Loader2 className="spin" /> : <RotateCcw />} <span className="hidden sm:inline">Reset Demo State</span><span className="sm:hidden">Reset Demo</span>
+                {reset.isPending ? <Loader2 className="spin" /> : <RotateCcw />} <span className="hidden sm:inline">Reset Demo State</span><span className="sm:hidden">Reset</span>
               </button>
             </div>
           </header>
@@ -73,7 +86,7 @@ function RoleSwitch() {
               role="radio"
               aria-checked={active}
               onClick={() => setRole(key)}
-              className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[11px] font-semibold transition-colors ${
+              className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2 sm:px-2.5 py-1.5 min-h-[38px] sm:min-h-0 text-[11px] font-semibold transition-colors ${
                 active ? (key === "manager" ? "bg-[#2f6e52] text-white shadow-sm" : "bg-white text-[#35434a] shadow-sm") : "text-[#6b7570] hover:text-[#35434a]"
               }`}
               data-testid={`button-role-${key}`}
