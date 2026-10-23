@@ -117,11 +117,11 @@ export default function Workspace() {
   // Show the latest saved version of the approved quote (crew or risk status may change after approval).
   const liveQuote = quote ? (commitments.data?.find((c) => c.quote.id === quote.id)?.quote ?? quote) : null;
 
-  const analyse = (text: string = message) => {
+  const analyse = (text: string = message, preserveDraft = false) => {
     approve.reset();
     createDraft.reset();
     setQuote(null);
-    setDraft(null);
+    if (!preserveDraft) setDraft(null);
     enquiry.mutate({ data: { message: text } }, {
       onSuccess: (r) => {
         setResult(r);
@@ -243,7 +243,7 @@ export default function Workspace() {
             <ApprovalCard
               key={resultId}
               result={result}
-              onReverify={() => analyse(sentMessage)}
+              onReverify={() => analyse(sentMessage, true)}
               reverifying={enquiry.isPending}
               onApprove={doApprove}
               onViewDraft={() => { const d = draftDoc(result, customer); if (d) setPrintDoc(d); }}
@@ -356,7 +356,7 @@ function ApprovalCard({ result, onApprove, onReverify, reverifying, onViewDraft,
       <CardHeader><CardTitle>Crew availability &amp; manager decision</CardTitle><CardDescription>Check the requested date and available alternatives before confirming a promise.</CardDescription></CardHeader>
       <CardContent>
       {!showOptions && <p className="text-sm text-muted-foreground">Clarify the request before checking a crew slot or approving the quotation.</p>}
-      {p && showOptions && <QuoteTerms hasSlot={hasSlot} hold={hold} onReverify={onReverify} reverifying={reverifying} />}
+      {p && showOptions && <QuoteTerms hasSlot={hasSlot} hold={hold} onReverify={onReverify} reverifying={reverifying} submitted={!!draft} />}
 
       {showOptions && (
         <div className={`grid gap-3 mt-4 ${optB ? "sm:grid-cols-2" : ""}`}>
@@ -459,7 +459,7 @@ function OptionCard({ label, opt, onApprove, approvingDate, canApprove, holdExpi
       <div className="mb-1 text-xs text-muted-foreground">{label}</div>
       <div className="font-semibold">{longDate(opt.date)}</div>
       <div className="mt-2">
-        {stale ? <StatusBadge tone="amber" testId={`badge-stale-${opt.date}`}>Hold expired · re-check needed</StatusBadge> : <StatusBadge tone={ok ? "green" : opt.verdict === "not_feasible" ? "red" : "verify"}>{v.label}</StatusBadge>}
+        {stale ? <StatusBadge tone="amber" testId={`badge-stale-${opt.date}`}>Check expired · re-check needed</StatusBadge> : <StatusBadge tone={ok ? "green" : opt.verdict === "not_feasible" ? "red" : "verify"}>{v.label}</StatusBadge>}
       </div>
       {opt.crew.length > 0 && (
         <div className="crew-list">

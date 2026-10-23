@@ -54,7 +54,7 @@ export default function Dashboard() {
       <Card className="mb-5">
         <dl className="grid grid-cols-2 md:grid-cols-4">
           {[
-            { label: "Waiting for your decision", value: d?.counts.pendingQuotations, sub: "draft quotations", href: "/approvals" },
+            { label: "Awaiting manager approval", value: d?.counts.pendingQuotations, sub: "submitted draft quotations", href: "/approvals" },
             { label: "Promises at risk", value: d?.counts.atRiskCommitments, sub: "approved commitments to review", href: "/risk" },
             { label: "Jobs booked ahead", value: d?.counts.upcomingAppointments, sub: d?.upcoming[0] ? `next: ${shortDay(d.upcoming[0].appointmentDate)}` : "nothing scheduled", href: "/schedule" },
             { label: "Crew free today", value: d ? `${d.crewToday.available} of ${d.crewToday.technicians}` : undefined, sub: d ? `${d.crewToday.onLeave} on leave · ${d.crewToday.assigned} on a job` : "loading crew", href: "/schedule" },
@@ -76,7 +76,7 @@ export default function Dashboard() {
           <Card>
             <CardHeader><div className="flex items-start justify-between gap-2"><div><CardTitle>Needs your attention</CardTitle><CardDescription>At-risk promises first, then drafts, then crew shortages.</CardDescription></div>{attention.length > 0 && <Badge variant="secondary">{attention.length}</Badge>}</div></CardHeader>
             <CardContent>
-            {s.isLoading ? <SkeletonRows rows={3} /> : attention.length === 0 ? (
+            {s.isLoading ? <SkeletonRows rows={3} /> : s.isError ? <p className="text-sm text-muted-foreground">Could not check pending decisions. Retry above.</p> : attention.length === 0 ? (
               <Empty icon={CheckCircle2} title="Nothing waiting on you">Every approved promise is feasible and no draft is queued.</Empty>
             ) : (
               <div className="divide-y">
@@ -89,7 +89,7 @@ export default function Dashboard() {
           <Card>
             <CardHeader><div className="flex flex-wrap items-center justify-between gap-2"><div><CardTitle>Upcoming jobs</CardTitle><CardDescription>Approved jobs with a confirmed crew.</CardDescription></div><Button variant="outline" size="sm" asChild><Link href="/schedule"><CalendarDays /> Schedule</Link></Button></div></CardHeader>
             <CardContent>
-            {s.isLoading ? <SkeletonRows /> : !d?.upcoming.length ? (
+            {s.isLoading ? <SkeletonRows /> : s.isError ? <p className="text-sm text-muted-foreground">Could not load upcoming jobs. Retry above.</p> : !d?.upcoming.length ? (
               <Empty icon={CalendarCheck} title="No appointments booked">Approve a quotation and the job appears here.</Empty>
             ) : (
               <div className="grid">
@@ -117,7 +117,7 @@ export default function Dashboard() {
           <Card>
             <CardHeader><CardTitle>Crew today</CardTitle><CardDescription>{d ? `${d.crewToday.weekday}, ${shortDay(d.crewToday.date)}` : "Loading"}</CardDescription></CardHeader>
             <CardContent>
-            {s.isLoading || !d ? <SkeletonRows rows={2} /> : (
+            {s.isError ? <p className="text-sm text-muted-foreground">Could not check crew availability. Retry above.</p> : s.isLoading || !d ? <SkeletonRows rows={2} /> : (
               <>
                 <div className="crew-bar" aria-hidden>
                   <span className="ok" style={{ flex: d.crewToday.available }} />

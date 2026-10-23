@@ -21,7 +21,10 @@ description: Decisions for the ORO AI hackathon prototype (formerly QuoteGuard) 
   **How to apply:** use the approved system for app UI; do not treat extraction approval alone as consent to migrate other screens or canvas mockups.
 - The user approved graduating the Taste Skill / Impeccable pilot to Dashboard and New Enquiry only, explicitly conditional on retaining all existing features, including voice.
   **Why:** the canvas pilot deliberately omitted voice, wallet and crew-hold interactions; the user wanted its visual direction, not those omissions or its simulated store.
-  **How to apply:** retain the real hooks, voice/transcription, wallet, hold expiry, approval safety and print/reset behavior. Other screens and backend rules stay outside this redesign scope.
+  **How to apply:** retain the real hooks, voice/transcription, wallet, hold expiry, approval safety and print/reset behavior. The user later authorised an app-wide presentation audit, not new backend rules or a whole-app redesign.
+- Availability expiry must be described as a demo freshness check, not a real reservation or automatic submission.
+  **Why:** the user expected expiry to create a pending quotation; no crew is actually held before approval.
+  **How to apply:** distinguish unsaved preview, submitted draft, approved booking and declined quote in screen/print copy. Expiry alone must never imply a booking was cancelled or a draft submitted.
 - The user watches the preview live while I work and presses Reset Demo State themselves (a `POST /api/demo/reset` in the API log with no agent action = the user). Do not treat an unexpected reset as a bug, and expect my curl test records to vanish mid-session.
 - Activity feeds should prioritise short summaries and a small set of semantic tag colours, with full audit text behind Details and warnings visible.
   **Why:** the user found the verbose quotation event stream frustrating and approved grouping rather than removing audit records.

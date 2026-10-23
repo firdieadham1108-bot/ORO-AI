@@ -28,7 +28,7 @@ export default function Approvals() {
 
   return (
     <div className="page">
-      <PageHeader eyebrow="Manager approval" title="Promises waiting for a decision" sub="Each draft is re-checked against today's leave and job records before you confirm a date." />
+      <PageHeader eyebrow="Manager approval" title="Quotations awaiting approval" sub="Only submitted drafts appear here. Analysing an enquiry or letting its availability check expire does not submit it. Crew availability is checked again on approval." />
       {done && (
         <div className={`notice ${done.kind === "approved" ? "success" : "warn"} mb-4`} role="status" data-testid="notice-decision">
           {done.kind === "approved" ? <CheckCircle2 /> : <XCircle />}
@@ -56,7 +56,7 @@ export default function Approvals() {
 
       <div className="flex items-center gap-2 mt-8 mb-3"><h2 className="section-title">Recent decisions</h2></div>
       <section className="panel !p-0 overflow-hidden">
-        {q.isLoading ? <div className="p-5"><SkeletonRows rows={3} /></div> : history.length === 0 ? <Empty icon={ClipboardCheck} title="No decisions yet" /> : (
+        {q.isLoading ? <div className="p-5"><SkeletonRows rows={3} /></div> : q.isError ? <p className="p-5 text-sm text-muted-foreground">Decision history could not be loaded. Retry using the message above.</p> : history.length === 0 ? <Empty icon={ClipboardCheck} title="No decisions yet" /> : (
           <div className="grid">
             {history.map((h) => (
               <div key={h.id} className="hist-row" data-testid={`row-history-${h.id}`}>

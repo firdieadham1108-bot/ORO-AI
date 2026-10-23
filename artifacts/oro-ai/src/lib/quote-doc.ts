@@ -6,7 +6,8 @@ export function quoteToDoc(x: Quote): QuoteDocData {
   return {
     companyName: x.companyName,
     reference: x.reference,
-    status: x.riskStatus === "AT_RISK" ? "at_risk" : x.status === "approved" ? "approved" : "draft",
+    status: x.status === "rejected" ? "rejected" : x.riskStatus === "AT_RISK" ? "at_risk" : x.status === "approved" ? "approved" : "draft",
+    rejectionReason: x.rejectionReason,
     customerName: x.customerName,
     location: x.location,
     lines: x.lineItems,

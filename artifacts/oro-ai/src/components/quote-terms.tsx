@@ -39,11 +39,12 @@ export function useHoldTimer(seconds: number, active: boolean): HoldTimer {
   };
 }
 
-export function QuoteTerms({ hasSlot, hold, onReverify, reverifying }: {
+export function QuoteTerms({ hasSlot, hold, onReverify, reverifying, submitted = false }: {
   hasSlot: boolean;
   hold: HoldTimer;
   onReverify: () => void;
   reverifying: boolean;
+  submitted?: boolean;
 }) {
   return (
     <div className={`quote-terms ${hold.expired ? "expired" : ""}`} data-testid="quote-terms">
@@ -53,38 +54,43 @@ export function QuoteTerms({ hasSlot, hold, onReverify, reverifying }: {
         </span>
         {hasSlot && !hold.expired && (
           <span className="term-badge hold" data-testid="badge-hold">
-            <Timer size={13} aria-hidden /> Crew Slot Temporary Hold: {HOLD_SECONDS}s (Demo Simulation)
+            <Timer size={13} aria-hidden /> Availability check expires in (demo):
             <span className="hold-count" data-testid="text-hold-countdown">{hold.remaining}s left</span>
           </span>
         )}
         {hasSlot && hold.expired && (
           <span className="term-badge expired" data-testid="badge-hold-expired">
-            <TimerOff size={13} aria-hidden /> HOLD EXPIRED — Needs Re-verification before confirming
+            <TimerOff size={13} aria-hidden /> Availability check expired — re-check before confirming
           </span>
         )}
       </div>
       {hasSlot && !hold.expired && (
         <div className="hold-track" aria-hidden><span style={{ width: `${hold.fraction * 100}%` }} /></div>
       )}
-      <div className="sr-only" aria-live="polite">{hold.expired ? "Crew slot hold expired. Re-verify availability before confirming." : ""}</div>
+      <div className="sr-only" aria-live="polite">{hold.expired ? "Availability check expired. No booking was cancelled. Re-check before confirming." : ""}</div>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
         <p className="m-0 text-[11px] leading-snug text-[#6f7a75] flex-1 min-w-[200px]">
           {!hasSlot
-            ? "No crew slot is held, because no date in this quote is feasible."
+            ? "No available crew option was found. No slot has been reserved."
             : hold.expired
-              ? "The crew is released, so nobody's day stays blocked. Staff records may have changed: re-check before confirming. The price stays valid."
-              : "The price and the crew hold expire separately. Simulated hold: the crew is locked in the database only when the manager approves."}
+              ? "Staff records may have changed. Re-check before confirming. The timer does not cancel a quotation or change its price."
+              : "This is a 30-second demo freshness check, not a crew reservation. A booking is created only after manager approval."}
         </p>
         {hasSlot && (hold.expired ? (
           <button className="btn btn-primary" onClick={onReverify} disabled={reverifying} data-testid="button-reverify">
-            {reverifying ? <Loader2 className="spin" /> : <RefreshCw />} Re-verify Availability
+            {reverifying ? <Loader2 className="spin" /> : <RefreshCw />} Re-check availability
           </button>
         ) : (
           <button className="btn" onClick={hold.expireNow} data-testid="button-simulate-hold-expiry">
-            <TimerOff /> Simulate Hold Expiry
+            <TimerOff /> Demo: expire check now
           </button>
         ))}
       </div>
+      <p className="mt-2 mb-0 text-xs text-muted-foreground" data-testid="text-submission-state">
+        {submitted
+          ? "Sent for approval. This draft stays in Pending until the manager approves or declines it, even if this check expires."
+          : "Not submitted yet. Expiry does not add this quotation to Pending. Sales can send it for approval; a manager can approve an available option directly."}
+      </p>
     </div>
   );
 }

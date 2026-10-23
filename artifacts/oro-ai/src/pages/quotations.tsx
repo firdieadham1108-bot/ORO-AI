@@ -14,7 +14,7 @@ import { rm, myTime } from "@/lib/util";
 import { shortDay } from "@/lib/dates";
 
 type Filter = "all" | "draft" | "approved" | "rejected";
-const FILTERS: Array<[Filter, string]> = [["all", "All"], ["draft", "Pending"], ["approved", "Approved"], ["rejected", "Declined"]];
+const FILTERS: Array<[Filter, string]> = [["all", "All"], ["draft", "Pending approval"], ["approved", "Approved"], ["rejected", "Declined"]];
 
 export default function Quotations() {
   const q = useListQuotes();
@@ -38,12 +38,12 @@ export default function Quotations() {
 
   return (
     <div className="page">
-      <PageHeader eyebrow="Quotations" title="Every quote, traceable" sub="Prices come from the approved price list. Open a row for the printable quotation." />
+      <PageHeader eyebrow="Quotations" title="Saved quotations" sub="Submitted drafts, approved bookings and declined quotations. Unsaved enquiry previews do not appear here. Open a row to view or print." />
       <div className="toolbar">
         <div className="seg" role="tablist" aria-label="Filter by status">
           {FILTERS.map(([k, l]) => (
             <button key={k} role="tab" aria-selected={filter === k} className={filter === k ? "on" : ""} onClick={() => setFilter(k)} data-testid={`filter-${k}`}>
-              {l} <span className="seg-n">{counts[k]}</span>
+              {l} <span className="seg-n">{q.isLoading || q.isError ? "—" : counts[k]}</span>
             </button>
           ))}
         </div>
@@ -72,12 +72,12 @@ export default function Quotations() {
                 </tbody>
               </table>
             </div>
-            <div className="show-mobile grid">
+            <div className="show-mobile grid min-w-0 grid-cols-1">
               {rows.map((x) => (
-                <button key={x.id} className="m-card" onClick={() => setOpen(x)} data-testid={`card-quote-${x.id}`}>
-                  <div className="flex justify-between items-start gap-2">
-                    <div className="min-w-0"><span className="mono">{x.reference}</span><div className="customer truncate">{x.customerName}</div></div>
-                    <span className="money">{rm(x.totalPrice)}</span>
+                <button key={x.id} className="m-card min-w-0" onClick={() => setOpen(x)} data-testid={`card-quote-${x.id}`}>
+                  <div className="flex flex-wrap justify-between items-start gap-2">
+                    <div className="min-w-0 flex-1"><span className="mono">{x.reference}</span><div className="customer break-words">{x.customerName}</div></div>
+                    <span className="money shrink-0">{rm(x.totalPrice)}</span>
                   </div>
                   <div className="secondary-text">{services(x)}</div>
                   <div className="flex items-center justify-between gap-2 mt-2 flex-wrap">

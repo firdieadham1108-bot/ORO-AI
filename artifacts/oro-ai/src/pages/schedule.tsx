@@ -34,11 +34,12 @@ export default function Schedule() {
             <button className="btn" onClick={() => shift(-7)} disabled={!s || q.isFetching} aria-label="Previous week" data-testid="button-prev-week"><ChevronLeft /></button>
             <span className="week-label" data-testid="text-week">{s ? `${shortDay(s.from)} – ${shortDay(s.to)}` : "Loading week"}</span>
             <button className="btn" onClick={() => shift(7)} disabled={!s || q.isFetching} aria-label="Next week" data-testid="button-next-week"><ChevronRight /></button>
-            {from && <button className="btn btn-ghost" onClick={() => setFrom(undefined)} data-testid="button-this-week">This week</button>}
+            {from && <button className="btn btn-ghost" onClick={() => setFrom(undefined)} data-testid="button-this-week">Demo week</button>}
           </div>
         }
       />
       <Legend />
+      <p className="mb-4 text-xs text-muted-foreground">Demo records only. “Available” means no job or leave is recorded, not that the technician meets every job's requirements. Crew is checked again before booking. Select an ORO booking block to open its quotation.</p>
       {q.isError ? <ErrorBox error={q.error} onRetry={() => q.refetch()} /> : q.isLoading || !s ? (
         <div className="panel"><div className="grid grid-cols-4 md:grid-cols-8 gap-2">{Array.from({ length: 32 }).map((_, i) => <div key={i} className="skeleton-box !h-16" />)}</div></div>
       ) : s.staff.length === 0 ? (
@@ -72,7 +73,7 @@ export default function Schedule() {
             {s.days.map((d, i) => (
               <section key={d.date} className={`panel !p-3.5 ${d.workingDay ? "" : "opacity-60"}`} data-testid={`card-day-${d.date}`}>
                 <div className="flex items-center justify-between mb-2">
-                  <strong className="font-display text-[14px]">{shortDay(d.date)}{d.isReferenceDate ? " · today" : ""}</strong>
+                  <strong className="font-display text-[14px]">{shortDay(d.date)}{d.isReferenceDate ? " · demo today" : ""}</strong>
                   <span className="secondary-text !mt-0">{d.workingDay ? `${d.availableInstallers} free · ${d.availableSeniorInstallers} senior` : "Non-working day"}</span>
                 </div>
                 {d.workingDay && s.staff.map((r) => {

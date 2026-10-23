@@ -31,10 +31,11 @@ export default function Activity() {
       <div className="toolbar">
         <label className="search"><Search /><input value={text} onChange={(e) => setText(e.target.value)} placeholder="Search action, description or person" data-testid="input-search-activity" /></label>
         <div className="seg">
-          <button className={!warnOnly ? "on" : ""} onClick={() => setWarnOnly(false)} data-testid="filter-activity-all">All <span className="seg-n">{all.length}</span></button>
-          <button className={warnOnly ? "on" : ""} onClick={() => setWarnOnly(true)} data-testid="filter-activity-warnings">Warnings <span className="seg-n">{warnings}</span></button>
+          <button className={!warnOnly ? "on" : ""} aria-pressed={!warnOnly} onClick={() => setWarnOnly(false)} data-testid="filter-activity-all">All events <span className="seg-n">{q.isLoading || q.isError ? "—" : all.length}</span></button>
+          <button className={warnOnly ? "on" : ""} aria-pressed={warnOnly} onClick={() => setWarnOnly(true)} data-testid="filter-activity-warnings">Warning events <span className="seg-n">{q.isLoading || q.isError ? "—" : warnings}</span></button>
         </div>
       </div>
+      <p className="mb-3 text-xs text-muted-foreground">Showing up to 200 recent events, combined into updates below. Historical warnings are not necessarily unresolved issues; check Risk Monitor for current booking risks.</p>
       <section className="panel">
         {q.isLoading ? <SkeletonRows rows={8} /> : q.isError ? <ErrorBox error={q.error} onRetry={() => q.refetch()} /> : rows.length === 0 ? (
           <Empty icon={History} title={all.length ? "Nothing matches" : "No activity yet"}>{all.length ? "Clear the search or show all entries." : "Actions appear here as soon as someone uses ORO."}</Empty>

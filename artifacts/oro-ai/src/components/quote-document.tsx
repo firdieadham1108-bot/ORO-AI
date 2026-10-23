@@ -7,7 +7,8 @@ import { rm, longDate, myTime } from "@/lib/util";
 export interface QuoteDocData {
   companyName: string;
   reference: string | null; // null while still a draft
-  status: "draft" | "approved" | "at_risk";
+  status: "draft" | "approved" | "at_risk" | "rejected";
+  rejectionReason?: string | null;
   customerName: string;
   location: string;
   lines: Array<{ serviceName: string; quantity: number; unitPrice: number; lineTotal: number }>;
@@ -24,10 +25,13 @@ const STATUS_BADGE: Record<QuoteDocData["status"], { cls: string; label: string 
   draft: { cls: "badge-amber", label: "Draft · awaiting manager approval" },
   approved: { cls: "badge-green", label: "Approved" },
   at_risk: { cls: "badge-red", label: "Approved · At risk" },
+  rejected: { cls: "badge-amber", label: "Declined · not booked" },
 };
 
 export function QuoteDocument({ q }: { q: QuoteDocData }) {
-  const st = STATUS_BADGE[q.status];
+  const st = q.status === "draft" && !q.reference
+    ? { cls: "badge-amber", label: "Preview · not submitted" }
+    : STATUS_BADGE[q.status];
   return (
     <article className="quote-sheet w-full" data-testid="quote-sheet">
       <div className="flex justify-between gap-4 flex-wrap">
@@ -39,7 +43,7 @@ export function QuoteDocument({ q }: { q: QuoteDocData }) {
         </div>
         <div className="sm:text-right">
           <div className="eyebrow">Quotation no.</div>
-          <div className="mono text-[15px]" data-testid="text-reference">{q.reference ?? "Assigned on approval"}</div>
+          <div className="mono text-[15px]" data-testid="text-reference">{q.reference ?? "Assigned when submitted or approved"}</div>
           <div className="mt-2"><span className={`badge ${st.cls}`} data-testid="status-quote">{st.label}</span></div>
         </div>
       </div>
@@ -48,9 +52,9 @@ export function QuoteDocument({ q }: { q: QuoteDocData }) {
         <div><dt>Job location</dt><dd>{q.location}</dd></div>
         <div><dt>Requested date</dt><dd>{q.requestedDate ? longDate(q.requestedDate) : "Not given"}</dd></div>
         <div>
-          <dt>Promised date</dt>
+          <dt>{q.status === "draft" ? "Proposed date" : q.status === "rejected" ? "Booking date" : "Promised date"}</dt>
           <dd className="font-semibold" data-testid="text-appointment">
-            {q.promisedDate ? longDate(q.promisedDate) : "To be confirmed"}{q.status === "draft" && q.promisedDate ? " (proposed)" : ""}
+            {q.status === "rejected" ? "Not booked" : q.promisedDate ? longDate(q.promisedDate) : "To be confirmed"}{q.status === "draft" && q.promisedDate ? " (not booked)" : ""}
           </dd>
         </div>
         <div className="sm:col-span-2">
@@ -72,8 +76,10 @@ export function QuoteDocument({ q }: { q: QuoteDocData }) {
       </div>
       <div className="q-total"><span className="text-[13px] font-semibold">Total (RM)</span><span data-testid="text-quote-total">{rm(q.totalPrice)}</span></div>
       <p className="mt-8 text-[12px] text-[#707b7a]" data-testid="text-approval-status">
-        {q.status === "draft"
-          ? "Approval status: not yet approved. This draft is not a confirmed booking."
+        {q.status === "rejected"
+          ? `Approval status: declined. No booking confirmed.${q.rejectionReason ? ` Reason: ${q.rejectionReason}` : ""}`
+          : q.status === "draft"
+          ? q.reference ? "Awaiting manager approval. This draft is not a confirmed booking." : "Preview only: not saved or submitted for approval. No crew is reserved."
           : `Approval status: approved by ${q.approvedBy ?? "manager"}${q.approvedAt ? ` on ${myTime(q.approvedAt)} (Malaysia time)` : ""}.`}{" "}
         Prices from the approved CoolAir Services price list.
       </p>
