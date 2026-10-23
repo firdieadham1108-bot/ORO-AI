@@ -1,5 +1,6 @@
 // Deterministic enquiry extraction. No AI: plain rules, so results are predictable and explainable.
 import { addDays, fromDateString, makeDate, referenceDate } from "./dates";
+import { requestedWorkText, unpricedScopeIssues } from "./request-scope";
 
 export interface ParsedEnquiry {
   serviceCode: string | null;
@@ -55,7 +56,7 @@ const CHINESE_DAYS: Array<[RegExp, number]> = [
 
 function extractQuantity(text: string): number | null {
   const patterns = [
-    new RegExp(`(?<![\\d.])${NUM}\\s*(?:x\\s*)?(?:units?|pcs|pieces|sets?|aircon[ds]?|aircons|air[- ]?cons?|acs?|biji|buah)\\b`, "i"),
+    new RegExp(`(?<![\\d.])${NUM}\\s*(?:x\\s*)?(?:wall(?:[- ]mounted)?\\s+)?(?:units?|pcs|pieces|sets?|aircon[ds]?|aircons|air[- ]?cons?|acs?|biji|buah)\\b`, "i"),
     new RegExp(`(?<![\\d.])${NUM}\\s*(?:x\\s*)?\\d(?:\\.\\d)?\\s*hp\\b`, "i"),
     // Chinese: 一台, 两台, 3台 ...
     /(?<![\d.])([一二两三四五六七八九十]|\d{1,3})\s*(?:台|个|架|部|粒)/,
@@ -152,7 +153,7 @@ const KIND_LABEL: Record<ParsedItem["serviceKind"], string> = {
 // "chemical wash" / "cuci kimia" is not also read as ordinary servicing.
 const CHEMICAL_RE = /chemical\s*(?:wash|clean)\w*|cuci\s*kimia|化学(?:清)?洗/i;
 const INSTALL_RE = /\binstall\w*|\bpasang\w*|\bpemasangan\b|安装|装/i;
-const SERVICE_RE = /\bservic(?:e|es|ing)\b|\bmaintenance\b|\bservis\b|保养|维修保养/i;
+const SERVICE_RE = /\bservic(?:e|es|ing)\b|\bnormal\s+cleaning\b|\bmaintenance\b|\bservis\b|保养|维修保养/i;
 
 /** Detect which service a piece of text asks for (first match wins, chemical before service). */
 function serviceKindOf(text: string): ParsedItem["serviceKind"] | null {
@@ -195,19 +196,20 @@ function parseItem(text: string, kind: ParsedItem["serviceKind"]): ParsedItem {
 
 export function parseEnquiry(message: string): ParsedEnquiry {
   const ref = referenceDate();
-  const missing: string[] = [];
+  const serviceText = requestedWorkText(message);
+  const missing: string[] = unpricedScopeIssues(serviceText, message);
 
   // One service: read the whole message. Several services: read each segment separately.
   const kindsInMessage = (["install", "chemical_wash", "standard_service"] as const).filter((k) =>
-    k === "install" ? INSTALL_RE.test(message)
-      : k === "chemical_wash" ? CHEMICAL_RE.test(message)
-        : SERVICE_RE.test(message.replace(new RegExp(CHEMICAL_RE.source, "gi"), "")),
+    k === "install" ? INSTALL_RE.test(serviceText)
+      : k === "chemical_wash" ? CHEMICAL_RE.test(serviceText)
+        : SERVICE_RE.test(serviceText.replace(new RegExp(CHEMICAL_RE.source, "gi"), "")),
   );
   let items: ParsedItem[] = [];
   if (kindsInMessage.length === 1) {
-    items = [parseItem(message, kindsInMessage[0]!)];
+    items = [parseItem(serviceText, kindsInMessage[0]!)];
   } else if (kindsInMessage.length > 1) {
-    for (const segment of segmentsOf(message)) {
+    for (const segment of segmentsOf(serviceText)) {
       const kind = serviceKindOf(segment);
       if (kind) items.push(parseItem(segment, kind));
     }

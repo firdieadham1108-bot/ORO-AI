@@ -66,7 +66,7 @@ try {
     cwd: serverDir,
     // Speech-to-text keys are blanked so voice tests always use the labelled simulated transcription.
     env: {
-      ...process.env, PORT: String(port), ORO_DB_PATH: dbPath, NODE_ENV: "test", LOG_LEVEL: "warn",
+      ...process.env, PORT: String(port), ORO_DB_PATH: dbPath, ORO_REFERENCE_DATE: "2026-10-21", NODE_ENV: "test", LOG_LEVEL: "warn",
       OPENAI_API_KEY: "", AI_INTEGRATIONS_OPENAI_BASE_URL: "", AI_INTEGRATIONS_OPENAI_API_KEY: "",
     },
     stdio: ["ignore", "pipe", "pipe"],
@@ -76,8 +76,8 @@ try {
   const base = `http://127.0.0.1:${port}/api`;
   await waitForHealth(`${base}/healthz`, server, logLines);
 
-  console.log("[3/3] Running the 10 required tests...\n");
-  exitCode = await run("node", ["--test", "--test-reporter=spec", "--test-concurrency=1", "tests/required.test.mjs"], {
+  console.log("[3/3] Running acceptance and teammate compatibility tests...\n");
+  exitCode = await run("node", ["--test", "--test-reporter=spec", "--test-concurrency=1", "tests/required.test.mjs", "tests/teammate-compatibility.test.mjs"], {
     ORO_API_URL: base,
     ORO_DB_PATH: dbPath,
   });

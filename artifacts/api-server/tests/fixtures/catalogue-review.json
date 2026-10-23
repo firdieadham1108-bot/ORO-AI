@@ -1,0 +1,76 @@
+{
+  "usage": "Review-only mapping. No runtime adapter, schema migration or new business policy is enabled.",
+  "services": [
+    {
+      "sourceCode": "INSTALL_WALL_10HP",
+      "proposedRateSen": 17000,
+      "disposition": "revise",
+      "currentCode": "install_1_0hp",
+      "currentRateSen": 16000
+    },
+    {
+      "sourceCode": "INSTALL_WALL_15HP",
+      "proposedRateSen": 19000,
+      "disposition": "compatible-price",
+      "currentCode": "install_1_5hp",
+      "currentRateSen": 19000
+    },
+    {
+      "sourceCode": "INSTALL_WALL_20HP",
+      "proposedRateSen": 23000,
+      "disposition": "defer",
+      "currentCode": null,
+      "currentRateSen": null
+    },
+    {
+      "sourceCode": "NORMAL_WALL_10_15HP",
+      "proposedRateSen": 8000,
+      "disposition": "compatible-price",
+      "currentCode": "standard_service",
+      "currentRateSen": 8000
+    },
+    {
+      "sourceCode": "NORMAL_WALL_20HP",
+      "proposedRateSen": 10000,
+      "disposition": "defer",
+      "currentCode": null,
+      "currentRateSen": null
+    },
+    {
+      "sourceCode": "CHEMICAL_WALL_15HP",
+      "proposedRateSen": 15000,
+      "disposition": "compatible-price",
+      "currentCode": "chemical_wash",
+      "currentRateSen": 15000
+    },
+    {
+      "sourceCode": "DISMANTLE_WALL_10_15HP",
+      "proposedRateSen": 8000,
+      "disposition": "defer",
+      "currentCode": null,
+      "currentRateSen": null
+    },
+    {
+      "sourceCode": "EXTRA_COPPER_15HP",
+      "proposedRateSen": 2400,
+      "disposition": "defer",
+      "currentCode": null,
+      "currentRateSen": null
+    },
+    {
+      "sourceCode": "REPAIR_INSPECTION",
+      "proposedRateSen": null,
+      "disposition": "defer",
+      "currentCode": null,
+      "currentRateSen": null
+    }
+  ],
+  "deferredPolicies": [
+    "Labour-only scope and material exclusions",
+    "14-day validity",
+    "HP-specific servicing restrictions and tiers",
+    "New services and their crew/duration rules",
+    "Fractional foot billing",
+    "Tax assessment and commercial terms"
+  ]
+}

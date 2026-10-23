@@ -23,6 +23,9 @@ description: Decisions for the ORO AI hackathon prototype (formerly QuoteGuard) 
 - Crew pick order comes from `staff.dispatch_order` (Bala 1, Mei 2, Chong 3, Ali 4) so the Monday crew is Bala + Mei and the recovery picks Chong.
   **Why:** Ali and Chong are both free seniors on Monday; the user expects the recovery to find Chong "dynamically", so Chong must rank ahead of Ali.
 - Demo "today" is fixed at 2026-10-21 so "this Friday" means 2026-10-23.
+- Teammate quotation catalogues are proposals, not authority to overwrite the demo price list or seed live records. The user accepted the conservative compatibility-first recommendation.
+  **Why:** the supplied catalogue proposed RM170 for 1.0HP (the demo uses RM160), new services and commercial terms that were not separately approved.
+  **How to apply:** keep teammate examples as isolated tests; retain current prices and scenarios until explicit business approval of new rates, scope and crew rules.
 - The SQLite file is not persistent across redeploys; it reseeds when empty.
 - Scenario 3 (Chinese, 2.0HP) intentionally ends in needs_clarification: 2.0HP is not on the brief's price list.
   **Why:** prices must come only from the price list; never invent one. Ask the user before adding a 2.0HP price.

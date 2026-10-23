@@ -5,6 +5,7 @@ import { parseEnquiry, type ParsedEnquiry } from "./parser";
 import { formatRm } from "./quotes";
 import { checkSchedule, findAlternatives, ALTERNATIVE_SEARCH_DAYS, type ScheduleCheck } from "./scheduling";
 import { calculateTotalSen, findService, senToRm } from "./services";
+import { hasUnpricedScope } from "./request-scope";
 
 const SALESPERSON = "Salesperson (demo)";
 
@@ -73,7 +74,7 @@ export function processEnquiry(message: string): EnquiryResult {
     const service = item.serviceCode ? findService(item.serviceCode) : undefined;
     return service && item.quantity !== null ? [{ service, quantity: item.quantity }] : [];
   });
-  if (analysis.items.length > 0 && lines.length === analysis.items.length) {
+  if (!hasUnpricedScope(analysis.missing) && analysis.items.length > 0 && lines.length === analysis.items.length) {
     const totalSen = lines.reduce((sum, l) => sum + calculateTotalSen(l.quantity, l.service.unitPriceSen), 0);
     const primary = lines.find((l) => l.service.code === analysis.serviceCode) ?? lines[0]!;
     pricing = {
@@ -102,7 +103,7 @@ export function processEnquiry(message: string): EnquiryResult {
   // Availability: needs both a service (for the crew rule) and a date.
   let requestedSchedule: ScheduleCheck | undefined;
   let alternatives: ScheduleCheck[] = [];
-  if (analysis.serviceCode && analysis.requestedDate) {
+  if (!hasUnpricedScope(analysis.missing) && analysis.serviceCode && analysis.requestedDate) {
     requestedSchedule = checkSchedule(analysis.requestedDate, analysis.serviceCode);
     if (requestedSchedule.verdict === "not_feasible") {
       logActivity("scheduling_conflict_detected", requestedSchedule.explanation, "System", "warning");

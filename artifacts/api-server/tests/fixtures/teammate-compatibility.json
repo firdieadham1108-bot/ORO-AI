@@ -1,0 +1,108 @@
+{
+  "syntheticDemo": true,
+  "referenceDate": "2026-10-21",
+  "usage": "Test-only. Never seed or import into the application database. Original messages and proposed totals are attribution, not approved policies.",
+  "cases": [
+    {
+      "id": "E01",
+      "message": "Hi boss, saya Lina. Nak labour install 1 wall aircon 1.5HP at Cheras office on 26 Oct 2026. Unit sendiri, existing piping/power/bracket technician dah confirm suitable, easy access, no extras. Quote pls.",
+      "teammateProposedTotalSen": 19000,
+      "teammatePricingStatus": "READY_FOR_REVIEW",
+      "expected": {
+        "totalSen": 19000,
+        "requestedDate": "2026-10-26"
+      }
+    },
+    {
+      "id": "E02",
+      "message": "Boss can labour install 6 units 1.5HP wall aircon at our Cheras office this Friday? Aircon we supply, existing piping/power/brackets already technician checked suitable. Accessible standard work only, no extras. Send quote please.",
+      "teammateProposedTotalSen": 114000,
+      "teammatePricingStatus": "READY_FOR_REVIEW",
+      "expected": {
+        "totalSen": 114000,
+        "requestedDate": "2026-10-23"
+      }
+    },
+    {
+      "id": "E03",
+      "message": "Shah Alam rumah terrace nak labour install wall units: 2 unit 1HP, 1 unit 1.5HP and 1 unit 2HP. Semua unit sendiri, technician confirmed existing services suitable ikut HP, easy access and no extra material/work. Boleh itemised quote?",
+      "teammateProposedTotalSen": 76000,
+      "teammatePricingStatus": "READY_FOR_REVIEW",
+      "expected": {
+        "totalSen": null,
+        "reason": "Mixed capacities and unapproved 2.0HP installation; do not adopt RM170/RM230."
+      }
+    },
+    {
+      "id": "E04",
+      "message": "Hi Kajang condo here, normal cleaning 2 wall units 1.5HP and 1 wall unit 2HP. Semua easy access indoor/outdoor, no chemical wash, gas or repair. Quote berapa?",
+      "teammateProposedTotalSen": 26000,
+      "teammatePricingStatus": "READY_FOR_REVIEW",
+      "expected": {
+        "totalSen": null,
+        "reason": "Mixed capacities must not collapse into one count or adopt the proposed 2.0HP servicing tier."
+      }
+    },
+    {
+      "id": "E05",
+      "message": "Puchong shop nak chemical wash 2 wall aircon 1.5HP, indoor outdoor accessible. Chemical cleaning only, bukan full overhaul, no parts/gas or other work. Boleh quote?",
+      "teammateProposedTotalSen": 30000,
+      "teammatePricingStatus": "READY_FOR_REVIEW",
+      "expected": {
+        "totalSen": 30000,
+        "requestedDate": null,
+        "reason": "Pricing only; date missing, not ready to book."
+      }
+    },
+    {
+      "id": "E06",
+      "message": "Boss, Klang rumah nak dismantle 2 wall aircon 1.5HP saja. Easy access, no transport, disposal or reinstall. Quote removal labour please.",
+      "teammateProposedTotalSen": 16000,
+      "teammatePricingStatus": "READY_FOR_REVIEW",
+      "expected": {
+        "totalSen": null,
+        "reason": "Dismantling not approved."
+      }
+    },
+    {
+      "id": "E07",
+      "message": "PJ office nak dismantle 1 existing wall aircon 1.5HP then reinstall same unit in next room. New point existing services technician dah confirm suitable. Easy access, no transport, gas or extra material. Quote both labour items separately ya.",
+      "teammateProposedTotalSen": 27000,
+      "teammatePricingStatus": "READY_FOR_REVIEW",
+      "expected": {
+        "totalSen": null,
+        "reason": "Dismantling/reinstallation scope not approved."
+      }
+    },
+    {
+      "id": "E08",
+      "message": "Ampang office nak labour install 1 wall aircon 1.5HP, unit sendiri. Existing services suitable; technician measured tambahan copper 7.5 feet TOTAL, other materials all sufficient. Easy access, no other extras. Quote install plus copper separately.",
+      "teammateProposedTotalSen": 37000,
+      "teammatePricingStatus": "READY_FOR_REVIEW",
+      "expected": {
+        "totalSen": null,
+        "reason": "Copper pricing and fractional measurement not enabled."
+      }
+    },
+    {
+      "id": "E09",
+      "message": "Kajang rumah nak normal cleaning wall aircon 1.5HP, all easy access, cleaning only no extras. Tapi berapa unit belum confirm dengan owner. Boleh quote dulu?",
+      "teammateProposedTotalSen": null,
+      "teammatePricingStatus": "NEEDS_CLARIFICATION",
+      "expected": {
+        "totalSen": null,
+        "reason": "Quantity unknown."
+      }
+    },
+    {
+      "id": "E10",
+      "message": "Hi, Subang Jaya apartment 1 wall aircon 1.5HP tak sejuk, mungkin gas bocor. Outdoor accessible. Need technician diagnose and quote repair, jangan assume gas top-up je.",
+      "teammateProposedTotalSen": null,
+      "teammatePricingStatus": "REQUIRES_INSPECTION",
+      "expected": {
+        "totalSen": null,
+        "reason": "Repair diagnosis requires clarification; no invented inspection fee."
+      }
+    }
+  ]
+}
