@@ -13,6 +13,16 @@ import { QuoteTerms, useHoldTimer, HOLD_SECONDS } from "@/components/quote-terms
 import { useRole } from "@/lib/role";
 import { rm, longDate, myTime } from "@/lib/util";
 import { quoteToDoc } from "@/lib/quote-doc";
+import { Button } from "@workspace/oro-design-system/components/ui/button";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@workspace/oro-design-system/components/ui/card";
+import { PageHeader } from "@workspace/oro-design-system/components/ui/page-header";
+import { Input } from "@workspace/oro-design-system/components/ui/input";
+import { Textarea } from "@workspace/oro-design-system/components/ui/textarea";
+import { Label } from "@workspace/oro-design-system/components/ui/label";
+import { Empty } from "@workspace/oro-design-system/components/ui/empty-state";
+import { SkeletonRows } from "@workspace/oro-design-system/components/ui/skeleton-rows";
+import { StatusBadge } from "@workspace/oro-design-system/components/ui/status-badges";
+import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from "@workspace/oro-design-system/components/ui/table";
 
 const COMPANY = "CoolAir Services Sdn Bhd";
 
@@ -171,56 +181,59 @@ export default function Workspace() {
 
   return (
     <div className="page">
-      <div className="mb-6 no-print">
-        <div className="eyebrow">Quotation workspace</div>
-        <h1>Turn a customer message into an approved quote</h1>
-        <p className="text-[13px] text-[#707b7a]">Paste the enquiry, let ORO check prices and crew, then approve the option that works.</p>
+      <div className="no-print">
+        <PageHeader eyebrow={`Quotation workspace · ${actorName}`} title="New enquiry"
+          sub="Paste the customer's message. ORO checks the approved price list and crew availability; the manager decides."
+          actions={<Button variant="outline" onClick={startOver}><RotateCcw /> Start over</Button>} />
       </div>
-      <SimulationBar />
       <RiskAlerts recovered={recovered} onRecovered={setRecovered} />
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,.9fr)_minmax(0,1.3fr)] items-start">
-        <div className="contents lg:grid gap-5 no-print">
-          <section className="panel order-1">
-            <div className="panel-heading"><div><h2>Customer enquiry</h2><p>Paste from WhatsApp, send a voice note, or pick a test scenario.</p></div></div>
-            <div className="field mb-3"><label htmlFor="cust">Customer name</label>
-              <input id="cust" value={customer} maxLength={160} onChange={(e) => setCustomer(e.target.value)} data-testid="input-customer" /></div>
-            <div className="mb-2">
-              <div className="text-[10px] uppercase tracking-wider text-[#7b857f] mb-1.5" style={{ fontFamily: "IBM Plex Mono" }}>Quick-fill scenarios</div>
+      <div className="grid gap-5 lg:grid-cols-5 items-start">
+        <div className="contents lg:grid lg:col-span-2 gap-5 no-print">
+          <Card className="order-1">
+            <CardHeader><CardTitle>Customer request</CardTitle><CardDescription>Paste from WhatsApp, send a voice note, or pick a sample message.</CardDescription></CardHeader>
+            <CardContent className="grid gap-4">
+            <div className="grid gap-2"><Label htmlFor="cust">Customer</Label>
+              <Input id="cust" value={customer} maxLength={160} onChange={(e) => setCustomer(e.target.value)} data-testid="input-customer" /></div>
+            <div className="grid gap-2"><Label htmlFor="msg">Message</Label>
+              {voice && <VoiceTranscriptNotice voice={voice} edited={message !== voice.transcript} />}
+              <Textarea className="min-h-36" id="msg" value={message} maxLength={2000} onChange={(e) => setMessage(e.target.value)} placeholder="Paste the customer's message here, or use a voice note below" data-testid="input-message" /></div>
+            <div>
+              <div className="mb-2 text-xs text-muted-foreground">Sample messages (demo)</div>
               <div className="flex flex-wrap gap-1.5">
                 {SCENARIOS.map((s, i) => (
-                  <button
+                  <Button
                     key={i}
-                    className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
-                      message === s.message ? "border-[#0F1E33] bg-[#0F1E33] text-[#F3EBD7]" : "border-[#E4E2DC] bg-[#FFFFFF] text-[#1E242B] hover:border-[#B99545] hover:bg-[#F3EBD7]"
-                    }`}
+                    variant={message === s.message ? "secondary" : "outline"} size="sm"
                     onClick={() => { setMessage(s.message); setCustomer(s.customer); setVoice(null); }}
                     data-testid={`button-scenario-${i + 1}`}
                   >
-                    {s.label}
-                  </button>
+                    {["Friday install, 6 units (EN)", "Install + service (BM)", "2.0HP + chemical wash (ZH)", "Install, size missing (EN)"][i]}
+                  </Button>
                 ))}
               </div>
             </div>
-            <div className="field"><label htmlFor="msg">Message</label>
-              {voice && <VoiceTranscriptNotice voice={voice} edited={message !== voice.transcript} />}
-              <textarea id="msg" value={message} maxLength={2000} onChange={(e) => setMessage(e.target.value)} placeholder="Paste the customer's message here, or use a voice note below" data-testid="input-message" /></div>
             <VoiceInput onTranscript={onTranscript} disabled={enquiry.isPending} />
-            <button className="btn btn-primary w-full mt-4" disabled={!message.trim() || !customer.trim() || enquiry.isPending} onClick={() => analyse()} data-testid="button-analyse">
+            <Button className="w-full" disabled={!message.trim() || !customer.trim() || enquiry.isPending} onClick={() => analyse()} data-testid="button-analyse">
               {enquiry.isPending ? <Loader2 className="spin" /> : <Sparkles />} {enquiry.isPending ? "Analysing enquiry" : "Analyse Enquiry"}
-            </button>
+            </Button>
             {enquiry.isError && <div className="mt-3"><ErrorBox error={enquiry.error} onRetry={() => analyse()} /></div>}
-          </section>
+            </CardContent>
+          </Card>
+          <Card className="order-4">
+            <CardHeader><CardTitle>Demo tools</CardTitle><CardDescription>Simulated Orbyte events for the walkthrough.</CardDescription></CardHeader>
+            <CardContent><SimulationBar /></CardContent>
+          </Card>
           <RecentActivity />
         </div>
 
-        <div className="grid gap-5 order-2 scroll-mt-14" ref={resultRef}>
+        <div className="grid min-w-0 gap-5 order-2 scroll-mt-14 lg:col-span-3" ref={resultRef} aria-live="polite">
           {enquiry.isPending ? (
-            <div className="panel grid gap-3"><div className="skeleton w-1/3" /><div className="skeleton-box" /><div className="grid sm:grid-cols-2 gap-3"><div className="skeleton-box h-48" /><div className="skeleton-box h-48" /></div></div>
+            <Card><CardHeader><CardTitle>Checking the enquiry</CardTitle><CardDescription>Checking the price list and crew availability.</CardDescription></CardHeader><CardContent><SkeletonRows rows={4} /></CardContent></Card>
           ) : liveQuote ? (
             <>
               <div className="flex flex-wrap gap-2 justify-end no-print">
-                <button className="btn" onClick={startOver} data-testid="button-new-enquiry"><RotateCcw /> Start new enquiry</button>
-                <button className="btn btn-primary" onClick={() => setPrintDoc(quoteToDoc(liveQuote))} data-testid="button-view-printable"><FileText /> View Printable Quotation</button>
+                <Button variant="outline" onClick={startOver} data-testid="button-new-enquiry"><RotateCcw /> Start new enquiry</Button>
+                <Button onClick={() => setPrintDoc(quoteToDoc(liveQuote))} data-testid="button-view-printable"><FileText /> View Printable Quotation</Button>
               </div>
               <div style={{ animation: "fade-up .3s ease both" }}><QuoteDocument q={quoteToDoc(liveQuote)} /></div>
             </>
@@ -240,13 +253,7 @@ export default function Workspace() {
               draft={draft}
             />
           ) : (
-            <div className="panel">
-              <div className="empty py-16">
-                <div className="empty-icon"><Inbox /></div>
-                <div className="font-bold text-[#35434a] mb-1">No enquiry analysed yet</div>
-                <div className="max-w-sm mx-auto">Pick a scenario on the left and click Analyse Enquiry. The approval card appears here with the price, the requested date and a backup option if the crew is not free.</div>
-              </div>
-            </div>
+            <Card><CardContent className="pt-6"><Empty icon={Inbox} title="No enquiry analysed yet">Pick a sample message, paste one or use a voice note, then click Analyse Enquiry. The price, crew availability and manager decision appear here.</Empty></CardContent></Card>
           )}
         </div>
       </div>
@@ -291,13 +298,17 @@ function ApprovalCard({ result, onApprove, onReverify, reverifying, onViewDraft,
   const hasSlot = !!(showOptions && p && [optA, optB].some((o) => o?.verdict === "feasible"));
   const hold = useHoldTimer(HOLD_SECONDS, hasSlot);
   return (
-    <section className="panel" data-testid="card-approval" style={{ animation: "fade-up .3s ease both" }}>
-      <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
-        <div><div className="eyebrow">AGUI Approval Card</div><h2 className="text-[18px] font-bold" style={{ fontFamily: "Manrope" }}>Review and approve</h2></div>
-        <span className={`badge ${st.cls}`} data-testid="status-result">{st.label}</span>
+    <section className="grid gap-5" data-testid="card-approval">
+      <Card>
+      <CardHeader>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <CardTitle>What the customer asked</CardTitle>
+        <StatusBadge tone={result.status === "conflict" ? "red" : result.status === "feasible" ? "green" : "amber"} testId="status-result">{st.label}</StatusBadge>
       </div>
-      <p className="text-[13px] text-[#53605f] mb-2" data-testid="text-summary">{result.summary}</p>
-      <p className="flex items-center gap-1.5 text-[11px] text-[#7b857f] mb-4" data-testid="badge-extraction-mode">
+      <CardDescription data-testid="text-summary">{result.summary}</CardDescription>
+      </CardHeader>
+      <CardContent>
+      <p className="flex items-center gap-1.5 text-xs text-muted-foreground" data-testid="badge-extraction-mode">
         <Info size={13} /> Demo extraction: rule-based parser (no AI model connected). Prices and crew checks come from the database.
       </p>
 
@@ -312,15 +323,19 @@ function ApprovalCard({ result, onApprove, onReverify, reverifying, onViewDraft,
         </div>
       )}
 
-      <LineItems result={result} />
-
-      <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-[13px] rounded-lg bg-[#F6F5F2] border border-[#E4E2DC] p-4 mt-3">
+      <dl className="grid grid-cols-2 gap-4 mt-4 text-sm">
         <Kv k="Requested date" v={a.requestedDate ? longDate(a.requestedDate) : null} />
         <Kv k="Location" v={a.location} />
       </dl>
+      </CardContent>
+      </Card>
 
+      <Card>
+      <CardHeader><CardTitle>Price</CardTitle><CardDescription>From the approved CoolAir price list. Pricing and crew availability are checked separately.</CardDescription></CardHeader>
+      <CardContent>
+      <LineItems result={result} />
       {p && (
-        <div className="mt-4 flex items-baseline justify-between flex-wrap gap-2 border-t border-b border-[#e9e5dc] py-3">
+        <div className="mt-4 flex items-baseline justify-between flex-wrap gap-2 border-y py-3">
           <span className="mono text-[13px]" data-testid="text-calculation">
             {p.lines.map((l) => `${l.quantity} x ${rm(l.unitPrice).replace(" ", "")}`).join(" + ")} = {p.totalFormatted}
           </span>
@@ -329,10 +344,16 @@ function ApprovalCard({ result, onApprove, onReverify, reverifying, onViewDraft,
       )}
       {p && a.location && (
         <div className="flex justify-end mt-3">
-          <button className="btn" onClick={onViewDraft} data-testid="button-view-printable"><FileText /> View Printable Quotation</button>
+          <Button variant="outline" size="sm" onClick={onViewDraft} data-testid="button-view-printable"><FileText /> View Printable Quotation</Button>
         </div>
       )}
+      </CardContent>
+      </Card>
 
+      <Card>
+      <CardHeader><CardTitle>Crew availability &amp; manager decision</CardTitle><CardDescription>Check the requested date and available alternatives before confirming a promise.</CardDescription></CardHeader>
+      <CardContent>
+      {!showOptions && <p className="text-sm text-muted-foreground">Clarify the request before checking a crew slot or approving the quotation.</p>}
       {p && showOptions && <QuoteTerms hasSlot={hasSlot} hold={hold} onReverify={onReverify} reverifying={reverifying} />}
 
       {showOptions && (
@@ -355,12 +376,14 @@ function ApprovalCard({ result, onApprove, onReverify, reverifying, onViewDraft,
             </div>
           </div>
         ) : (
-          <button className="btn btn-primary w-full mt-3" onClick={onSendForApproval} disabled={sendingDraft || !canApprove} data-testid="button-send-approval">
+          <Button className="w-full mt-3" onClick={onSendForApproval} disabled={sendingDraft || !canApprove} data-testid="button-send-approval">
             {sendingDraft ? <Loader2 className="spin" /> : <Send />} {sendingDraft ? "Sending to manager" : "Send to Manager for approval"}
-          </button>
+          </Button>
         )
       )}
       {!!error && <div className="mt-3"><ErrorBox error={error} /></div>}
+      </CardContent>
+      </Card>
     </section>
   );
 }
@@ -371,42 +394,42 @@ function LineItems({ result }: { result: EnquiryResult }) {
   const priced = result.pricing?.lines ?? [];
   if (items.length === 0) {
     return (
-      <div className="rounded-lg border border-[#eddfbf] bg-[#fbf3e1] p-3 text-[12px] text-[#795d2c]" data-testid="text-no-service">
+      <div className="rounded-md border bg-accent p-3 text-sm text-accent-foreground" data-testid="text-no-service">
         Service type not recognised. <span className="font-semibold">Missing</span>
       </div>
     );
   }
   return (
-    <div className="overflow-x-auto rounded-lg border border-[#e5e0d6]">
-      <table className="w-full text-[12px]" data-testid="table-line-items">
-        <thead className="bg-[#F6F5F2] text-[10px] uppercase tracking-wider text-[#7b857f]" style={{ fontFamily: "IBM Plex Mono" }}>
-          <tr><th className="text-left p-2 font-semibold">Service</th><th className="text-left p-2 font-semibold">Spec</th><th className="text-right p-2 font-semibold">Qty</th><th className="text-right p-2 font-semibold">Unit</th><th className="text-right p-2 font-semibold">Amount</th></tr>
-        </thead>
-        <tbody>
+    <div>
+      <Table data-testid="table-line-items">
+        <TableHeader>
+          <TableRow><TableHead>Service</TableHead><TableHead>Spec</TableHead><TableHead className="text-right">Qty</TableHead><TableHead className="text-right">Unit</TableHead><TableHead className="text-right">Amount</TableHead></TableRow>
+        </TableHeader>
+        <TableBody>
           {items.map((it, i) => {
             const line = priced.find((l) => l.serviceCode === it.serviceCode);
             const sizeMissing = it.serviceKind === "install" && !it.serviceCode;
             return (
-              <tr key={i} className={`border-t border-[#ece8df] ${it.issue ? "bg-[#fbf3e1]" : ""}`} data-testid={`row-item-${i}`}>
-                <td className="p-2 text-[#354248] font-medium">
+              <TableRow key={i} data-testid={`row-item-${i}`}>
+                <TableCell>
                   {line?.serviceName ?? KIND_LABEL[it.serviceKind]}
-                  {it.issue && <div className="text-[11px] font-normal text-[#996b23] mt-0.5" data-testid={`text-item-issue-${i}`}>Needs: {it.issue}</div>}
-                </td>
-                <td className="p-2">
+                  {it.issue && <div className="mt-1 text-xs text-muted-foreground" data-testid={`text-item-issue-${i}`}>Needs: {it.issue}</div>}
+                </TableCell>
+                <TableCell>
                   {sizeMissing ? (
-                    <span className="inline-block rounded-md border border-[#e3c98f] bg-[#f7e6bf] px-1.5 py-0.5 font-semibold text-[#8a5e14]" data-testid={`text-spec-missing-${i}`}>
+                    <StatusBadge tone="amber" testId={`text-spec-missing-${i}`}>
                       {it.specification ? `${it.specification} not on price list` : "HP missing"}
-                    </span>
-                  ) : (it.specification ?? <span className="text-[#9aa29d]">—</span>)}
-                </td>
-                <td className={`p-2 text-right ${it.quantity == null ? "text-[#996b23] font-semibold" : ""}`}>{it.quantity ?? "Missing"}</td>
-                <td className="p-2 text-right">{line ? rm(line.unitPrice) : <span className="text-[#996b23]">?</span>}</td>
-                <td className="p-2 text-right font-semibold">{line ? rm(line.lineTotal) : <span className="text-[#996b23]">?</span>}</td>
-              </tr>
+                    </StatusBadge>
+                  ) : (it.specification ?? "—")}
+                </TableCell>
+                <TableCell className="text-right">{it.quantity ?? "Missing"}</TableCell>
+                <TableCell className="text-right">{line ? rm(line.unitPrice) : "—"}</TableCell>
+                <TableCell className="text-right">{line ? rm(line.lineTotal) : "—"}</TableCell>
+              </TableRow>
             );
           })}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }
@@ -414,8 +437,8 @@ function LineItems({ result }: { result: EnquiryResult }) {
 function Kv({ k, v }: { k: string; v: string | null | undefined }) {
   return (
     <div>
-      <dt className="text-[10px] uppercase tracking-wider text-[#7b857f]" style={{ fontFamily: "IBM Plex Mono" }}>{k}</dt>
-      <dd className={`m-0 mt-0.5 ${v ? "font-medium text-[#354248]" : "font-semibold text-[#996b23]"}`}>{v || "Missing"}</dd>
+      <dt className="text-xs text-muted-foreground">{k}</dt>
+      <dd className="m-0 mt-1 font-medium">{v || "Missing"}</dd>
     </div>
   );
 }
@@ -430,11 +453,11 @@ function OptionCard({ label, opt, onApprove, approvingDate, canApprove, holdExpi
   const locked = ok && !isManager;
   const stale = ok && holdExpired;
   return (
-    <div className={`option-card flex flex-col ${ok ? "feasible" : "unfeasible"}`} style={{ marginTop: 0 }} data-testid={`card-option-${opt.date}`}>
-      <div className="eyebrow mb-1">{label}</div>
-      <div className="option-head"><span className="text-[15px]" style={{ fontFamily: "Manrope" }}>{longDate(opt.date)}</span></div>
+    <div className="flex flex-col rounded-md border p-4 text-sm" data-testid={`card-option-${opt.date}`}>
+      <div className="mb-1 text-xs text-muted-foreground">{label}</div>
+      <div className="font-semibold">{longDate(opt.date)}</div>
       <div className="mt-2">
-        {stale ? <span className="badge badge-amber !normal-case" data-testid={`badge-stale-${opt.date}`}>Hold expired · re-check needed</span> : <span className={`badge ${v.cls}`}>{v.label}</span>}
+        {stale ? <StatusBadge tone="amber" testId={`badge-stale-${opt.date}`}>Hold expired · re-check needed</StatusBadge> : <StatusBadge tone={ok ? "green" : opt.verdict === "not_feasible" ? "red" : "verify"}>{v.label}</StatusBadge>}
       </div>
       {opt.crew.length > 0 && (
         <div className="crew-list">
@@ -446,17 +469,18 @@ function OptionCard({ label, opt, onApprove, approvingDate, canApprove, holdExpi
       {opt.conflicts.length > 0 && (
         <ul className="list-disc">{opt.conflicts.map((c, i) => <li key={i}>{c.description}</li>)}</ul>
       )}
-      <p className="flex-1">{opt.explanation}</p>
+      <p className="flex-1 mt-3 text-xs text-muted-foreground">{opt.explanation}</p>
       {locked && <LockBadge className="mt-3" />}
-      <button
-        className={`btn w-full mt-2 !whitespace-normal !h-auto !py-2 ${ok && !locked && !stale ? "btn-primary" : ""}`}
+      <Button
+        variant={ok && !locked && !stale ? "default" : "outline"}
+        className="w-full mt-2 h-auto"
         disabled={!ok || locked || stale || !canApprove || approvingDate !== null}
         onClick={() => onApprove(opt)}
         data-testid={`button-approve-${opt.date}`}
       >
         {busy ? <Loader2 className="spin" /> : locked ? <Lock /> : stale ? <TimerOff /> : ok ? <CheckCircle2 /> : null}
-        {stale ? "Re-verify availability before confirming" : ok ? "Approve Quotation & Confirm Slot" : `${opt.weekday} not available`}
-      </button>
+        <span className="whitespace-normal">{stale ? "Re-verify availability before confirming" : ok ? "Approve Quotation & Confirm Slot" : `${opt.weekday} not available`}</span>
+      </Button>
     </div>
   );
 }
@@ -465,8 +489,9 @@ function RecentActivity() {
   const q = useListActivity();
   const items = q.data?.slice(0, 6) ?? [];
   return (
-    <section className="panel order-3">
-      <div className="panel-heading"><div><h2>Recent activity</h2><p>Newest first.</p></div></div>
+    <Card className="order-3">
+      <CardHeader><CardTitle>Recent activity</CardTitle><CardDescription>Newest first.</CardDescription></CardHeader>
+      <CardContent>
       {q.isLoading && <div className="grid gap-3"><div className="skeleton" /><div className="skeleton w-2/3" /><div className="skeleton" /></div>}
       {q.isError && <ErrorBox error={q.error} onRetry={() => q.refetch()} />}
       {q.data && items.length === 0 && <div className="text-[12px] text-[#818984]">No activity yet.</div>}
@@ -481,6 +506,7 @@ function RecentActivity() {
           </div>
         ))}
       </div>
-    </section>
+      </CardContent>
+    </Card>
   );
 }
