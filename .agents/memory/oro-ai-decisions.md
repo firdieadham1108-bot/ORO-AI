@@ -19,6 +19,9 @@ description: Decisions for the ORO AI hackathon prototype (formerly QuoteGuard) 
 - The user approved applying the extracted design system to existing ORO AI screens after reviewing the completed library. Their earlier pilot approval covered extraction only.
   **Why:** the user deliberately separated library review from application approval.
   **How to apply:** use the approved system for app UI; do not treat extraction approval alone as consent to migrate other screens or canvas mockups.
+- The Taste Skill / Impeccable redesign is approved as a canvas-only Dashboard and New Enquiry pilot, not a replacement of the working app.
+  **Why:** the user chose a source-backed desktop/mobile prototype review before applying a new direction.
+  **How to apply:** preserve the approved brand and shared design system; keep prototype actions local and require separate approval before graduating the redesign.
 - The user watches the preview live while I work and presses Reset Demo State themselves (a `POST /api/demo/reset` in the API log with no agent action = the user). Do not treat an unexpected reset as a bug, and expect my curl test records to vanish mid-session.
 - Crew pick order comes from `staff.dispatch_order` (Bala 1, Mei 2, Chong 3, Ali 4) so the Monday crew is Bala + Mei and the recovery picks Chong.
   **Why:** Ali and Chong are both free seniors on Monday; the user expects the recovery to find Chong "dynamically", so Chong must rank ahead of Ali.

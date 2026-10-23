@@ -1,0 +1,21 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap');
+/* The ONLY Tailwind root for the "oro-design-system" design system's mockups.
+ *
+ * It imports that design system's full theme from the workspace package
+ * (Tailwind engine + @theme + tokens) exactly once, so this entry's frames
+ * render with oro-design-system's own build. The package's styles.css also registers
+ * its own components with Tailwind, so their utility classes are generated
+ * without a node_modules path here; mockup files under ./mockups are picked up
+ * by Tailwind's normal project scan.
+ *
+ * Do NOT import the sandbox's src/index.css here — that would stack a second
+ * Tailwind build and token set on the frame.
+ *
+ * Manrope is the only ORO font missing from the sandbox font bundle (Inter and
+ * IBM Plex Mono are already in index.html), so it is imported first (CSS rule:
+ * @import url() must precede every other statement).
+ */
+@import '@workspace/oro-design-system/styles.css';
+@import '@workspace/oro-design-system/oro.css';
+/* Baseline-only product CSS, scoped under .oro-current (see the file header). */
+@import './mockups/_current/app.css';
