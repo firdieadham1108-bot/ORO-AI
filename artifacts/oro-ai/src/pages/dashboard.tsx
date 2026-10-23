@@ -18,6 +18,8 @@ import { StatusBadge } from "@workspace/oro-design-system/components/ui/status-b
 import { RiskAlerts, SimulationBar } from "@/components/risk";
 import { useState } from "react";
 import type { Commitment } from "@workspace/api-client-react";
+import { ActivityFeed } from "@/components/activity-feed";
+import { groupActivity } from "@/lib/activity-feed";
 
 const ATTN: Record<string, { href: string; icon: LucideIcon }> = {
   at_risk: { href: "/risk", icon: ShieldAlert },
@@ -165,7 +167,7 @@ function AttentionRow({ a, i }: { a: AttentionItem; i: number }) {
 
 function RecentActivity() {
   const q = useListActivity();
-  const items = q.data?.slice(0, 7) ?? [];
+  const items = groupActivity(q.data ?? []).slice(0, 4);
   return (
     <Card>
       <CardHeader><div className="flex items-center justify-between gap-2"><CardTitle>Recent activity</CardTitle><Button variant="ghost" size="sm" asChild><Link href="/activity"><History /> All</Link></Button></div><CardDescription>Newest first.</CardDescription></CardHeader>
@@ -173,17 +175,7 @@ function RecentActivity() {
       {q.isLoading && <SkeletonRows rows={4} />}
       {q.isError && <ErrorBox error={q.error} onRetry={() => q.refetch()} />}
       {q.data && items.length === 0 && <Empty icon={History} title="No activity yet" />}
-      <div className="activity-list">
-        {items.map((a) => (
-          <div key={a.id} className="activity-item" data-testid={`row-activity-${a.id}`}>
-            <div className={`activity-mark ${a.severity}`} />
-            <div className="min-w-0">
-              <div className="activity-text"><strong>{a.action}</strong> - {a.description}</div>
-              <div className="activity-time">{myTime(a.createdAt)} · {a.actor}</div>
-            </div>
-          </div>
-        ))}
-      </div>
+      <ActivityFeed groups={items} />
       </CardContent>
     </Card>
   );

@@ -23,6 +23,8 @@ import { Empty } from "@workspace/oro-design-system/components/ui/empty-state";
 import { SkeletonRows } from "@workspace/oro-design-system/components/ui/skeleton-rows";
 import { StatusBadge } from "@workspace/oro-design-system/components/ui/status-badges";
 import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from "@workspace/oro-design-system/components/ui/table";
+import { ActivityFeed } from "@/components/activity-feed";
+import { groupActivity } from "@/lib/activity-feed";
 
 const COMPANY = "CoolAir Services Sdn Bhd";
 
@@ -487,7 +489,7 @@ function OptionCard({ label, opt, onApprove, approvingDate, canApprove, holdExpi
 
 function RecentActivity() {
   const q = useListActivity();
-  const items = q.data?.slice(0, 6) ?? [];
+  const items = groupActivity(q.data ?? []).slice(0, 4);
   return (
     <Card className="order-3">
       <CardHeader><CardTitle>Recent activity</CardTitle><CardDescription>Newest first.</CardDescription></CardHeader>
@@ -495,17 +497,8 @@ function RecentActivity() {
       {q.isLoading && <div className="grid gap-3"><div className="skeleton" /><div className="skeleton w-2/3" /><div className="skeleton" /></div>}
       {q.isError && <ErrorBox error={q.error} onRetry={() => q.refetch()} />}
       {q.data && items.length === 0 && <div className="text-[12px] text-[#818984]">No activity yet.</div>}
-      <div className="activity-list">
-        {items.map((a) => (
-          <div key={a.id} className="activity-item" data-testid={`row-activity-${a.id}`}>
-            <div className={`activity-mark ${a.severity === "warning" ? "warning" : ""}`} />
-            <div>
-              <div className="activity-text"><strong>{a.action}</strong> - {a.description}</div>
-              <div className="activity-time">{myTime(a.createdAt)} · {a.actor}</div>
-            </div>
-          </div>
-        ))}
-      </div>
+      <ActivityFeed groups={items} />
+      {q.data && q.data.length > 0 && <Button variant="ghost" size="sm" asChild className="mt-3"><Link href="/activity">View all activity</Link></Button>}
       </CardContent>
     </Card>
   );

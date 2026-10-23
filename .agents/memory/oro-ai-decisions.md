@@ -23,6 +23,9 @@ description: Decisions for the ORO AI hackathon prototype (formerly QuoteGuard) 
   **Why:** the canvas pilot deliberately omitted voice, wallet and crew-hold interactions; the user wanted its visual direction, not those omissions or its simulated store.
   **How to apply:** retain the real hooks, voice/transcription, wallet, hold expiry, approval safety and print/reset behavior. Other screens and backend rules stay outside this redesign scope.
 - The user watches the preview live while I work and presses Reset Demo State themselves (a `POST /api/demo/reset` in the API log with no agent action = the user). Do not treat an unexpected reset as a bug, and expect my curl test records to vanish mid-session.
+- Activity feeds should prioritise short summaries and a small set of semantic tag colours, with full audit text behind Details and warnings visible.
+  **Why:** the user found the verbose quotation event stream frustrating and approved grouping rather than removing audit records.
+  **How to apply:** use the same presentation across Dashboard, New Enquiry and Activity Log; do not invent a quotation/customer association for anonymous events.
 - Crew pick order comes from `staff.dispatch_order` (Bala 1, Mei 2, Chong 3, Ali 4) so the Monday crew is Bala + Mei and the recovery picks Chong.
   **Why:** Ali and Chong are both free seniors on Monday; the user expects the recovery to find Chong "dynamically", so Chong must rank ahead of Ali.
 - Demo "today" is fixed at 2026-10-21 so "this Friday" means 2026-10-23.
