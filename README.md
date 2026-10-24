@@ -1,252 +1,704 @@
 # ORO AI
+### Don't Just Make Promises. Keep Them.
 
-> **"Don't just make promises. Keep them."**
-> SDC Hackathon 2026 · Domain 2: Orbyte Smart SME Challenge (Less Busywork, Better Business)
+**A commitment-aware quotation and workforce scheduling platform for service-based SMEs.**
 
-**Demo Environment - Simulated Orbyte Data.** All companies, people, prices, leave records and jobs in this project are **synthetic**.
-ORO AI is **not** connected to the real Orbyte system, WhatsApp or any payment service.
-
----
-
-## What is ORO AI?
-
-ORO AI helps a small service business turn a customer's WhatsApp-style enquiry into an accurate quotation.
-It only promises an appointment date that the business's staff can actually deliver.
-
-Our demo company is **CoolAir Services Sdn Bhd**, a fictional air-conditioning installer in Cheras, Kuala Lumpur.
-
-### The problem (Domain 2)
-
-Small service businesses usually quote by hand. Before promising a date, the salesperson should check:
-
-- the price list
-- which technicians are on approved leave (Orbyte eLeave)
-- who is already assigned to other jobs (Orbyte Work)
-- whether the crew has the right skills (Orbyte People), e.g. an installation needs a **senior** technician
-
-These records live in different places, so mistakes happen. Quotes are slow, prices are wrong, technicians are double-booked, and customers get dates the business cannot keep.
-Things also go wrong **after** a promise is made, for example when a technician takes emergency leave.
-
-### Our solution
-
-ORO AI reads the enquiry and works out the price from the approved price list.
-It then checks real staff availability and recommends a safe date and crew.
-A **manager approves** the result before anything is booked, and **every step is logged**.
-If a technician's leave is approved later, ORO AI flags the affected job as **AT RISK** and recommends a replacement. The manager approves that too.
-
-Prices and availability are calculated by plain, testable code, not by an AI model. The same input always gives the same answer.
+**Team I Forget | SDC Hackathon 2026 | Domain 2: Orbyte Smart SME Challenge**
 
 ---
 
-## The 5-step automated journey
+## Project Links
 
-```mermaid
-flowchart LR
-    A["1. Trigger<br/>Customer enquiry<br/>(EN / BM / Chinese)"] --> B["2. Connected data<br/>Mock Orbyte People,<br/>eLeave and Work"]
-    B --> C["3. Decision logic<br/>Price from price list<br/>+ crew and date check<br/>+ alternative date"]
-    C --> D["4. Human approval<br/>Manager (Faizal)<br/>approves quote and slot"]
-    D --> E["5. Visible outcome<br/>Quotation #ORO-1023,<br/>crew booked,<br/>activity log"]
-    E -. "leave approved later" .-> F["Risk monitor<br/>AT RISK + recommended<br/>replacement (manager approves)"]
+| Resource | Link |
+|---|---|
+| **Live Web Application** | [ORO AI — Live Demo](https://oro-ai.replit.app) |
+| **GitHub Repository** | [ORO AI Source Code](https://github.com/firdieadham1108-bot/ORO-AI) |
+| **Presentation Slides** | [Slide]((https://canva.link/v1jbxouj1mhkeks)) |
+| **Demonstration Video** | [YT](https://youtu.be/B67TfU6jsbM) |
+
+---
+
+## 1. About ORO AI
+
+ORO AI is a web-based business automation prototype developed by **Team I Forget**
+
+Built for the **SDC Hackathon 2026 — Domain 2: Orbyte Smart SME Challenge**, ORO AI addresses a common operational challenge faced by service-based small and medium enterprises (SMEs): making customer commitments without first verifying whether the business has sufficient resources to fulfil them.
+
+Small businesses such as motorcycle repair workshops, air-conditioning service providers and maintenance contractors often handle customer requests through informal messages while managing quotations, employee leave and job schedules separately.
+
+ORO AI brings these activities into one coordinated workflow.
+
+It helps staff interpret supported customer enquiries, generate service quotations, verify workforce availability and recommend realistic appointment dates. A manager reviews and approves the proposed booking before it becomes a confirmed commitment.
+
+ORO AI also demonstrates how a business can identify and recover from a staffing change after an appointment has already been confirmed.
+
+**Our mission is simple: help SMEs make better-informed customer commitments, reduce avoidable scheduling conflicts and protect business credibility.**
+
+---
+
+## 2. Problem Statement
+
+### The challenge: Businesses can make promises without knowing whether they can keep them.
+
+Many small service businesses rely on fragmented and manual processes to manage daily operations.
+
+Customer enquiries may arrive through WhatsApp, while service prices, employee leave, technical qualifications and existing job assignments are recorded in different places.
+
+As a result, business owners and employees must manually coordinate this information before confirming an appointment.
+
+This creates three main operational problems:
+
+**1. Fragmented business information**
+
+Important operational records are not always available in one place. Staff may need to check multiple records or contact different employees to confirm availability.
+
+**2. Time-consuming administrative work**
+
+Preparing quotations and checking schedules manually adds repetitive work, particularly when customers use informal or incomplete messages.
+
+**3. Unreliable customer commitments**
+
+An appointment may be promised before the business verifies technician availability, qualifications or conflicting assignments. Unexpected staff leave can further threaten confirmed appointments.
+
+These situations can contribute to delays, avoidable rescheduling, additional operating costs and lost customer trust.
+
+### Our core problem statement
+
+**Service SMEs struggle to make reliable customer commitments because quotations, employee availability and job scheduling are often managed through disconnected manual processes.**
+
+---
+
+## 3. Our Solution
+
+ORO AI connects quotation preparation with operational capacity checking and manager approval.
+
+Instead of stopping once a quotation has been generated, the system asks an additional question:
+
+**Can the business actually fulfil the requested service on the proposed date?**
+
+ORO AI supports this decision by checking available staff, approved leave, existing work assignments and simplified business staffing requirements.
+
+When a requested appointment is not feasible, the system explains the conflict and searches for an alternative date with a suitable available crew.
+
+Once a manager approves an appointment, the system saves the commitment and records the decision.
+
+If a subsequent simulated leave event affects an approved booking, ORO AI can flag that commitment as at risk and recommend a potential replacement technician.
+
+### Our value proposition
+
+**From customer enquiry to realistic commitment — with human oversight and traceable decisions.**
+
+---
+
+## 4. Innovation and Differentiation
+
+ORO AI focuses on **commitment reliability**, rather than quotation generation alone.
+
+Its proposed innovation is the combination of four operational capabilities within one workflow:
+
+| Capability | Business Value |
+|---|---|
+| **Quotation automation** | Reduces repetitive pricing calculations for supported services. |
+| **Capacity-aware scheduling** | Checks whether qualified staff are available before an appointment is approved. |
+| **Human-controlled confirmation** | Keeps important customer commitments under manager supervision. |
+| **Commitment risk and recovery** | Helps identify an affected appointment and propose a feasible replacement when staff availability changes. |
+
+The prototype demonstrates a **promise → verify → approve → monitor → recover** approach.
+
+This is especially relevant to technician-dependent SMEs, where a booking requires not just an available time slot but also employees with appropriate skills.
+
+ORO AI does not claim to eliminate every scheduling failure. Instead, it demonstrates how connected data, deterministic rules and human decisions can reduce avoidable risks.
+
+---
+
+## 5. How ORO AI Works
+
+ORO AI follows the five-stage business automation workflow used in the Domain 2 challenge.
+
+### Stage 1 — Trigger
+
+A staff member enters a customer enquiry received through WhatsApp-style messaging or another communication channel.
+
+The application accepts text and provides supported voice-input options.
+
+### Stage 2 — Connected Business Data
+
+The system uses simulated Orbyte-related business records, including:
+
+- **Orbyte People:** Employee information and qualifications.
+- **Orbyte eLeave:** Approved employee leave.
+- **Orbyte Work:** Existing work assignments and appointments.
+- **Service Catalogue:** Stored service descriptions and prices.
+
+These integrations are represented by mock adapters and synthetic data.
+
+### Stage 3 — Decision Logic
+
+ORO AI processes the supported enquiry and applies deterministic business rules to:
+
+- Identify required service information.
+- Calculate quotation prices.
+- Determine staffing requirements.
+- Check employee availability and overlapping assignments.
+- Detect conflicts.
+- Recommend feasible alternative dates and crews.
+
+### Stage 4 — Human Approval
+
+The proposed quotation and schedule are presented to a manager.
+
+The manager can approve a feasible appointment or decline a submitted quotation.
+
+Before confirmation, the backend rechecks availability to reduce the risk of double-booking.
+
+### Stage 5 — Visible Outcome
+
+Once approved, the application:
+
+- Saves the quotation.
+- Records the technician assignment.
+- Updates the relevant schedule.
+- Provides a printable quotation.
+- Creates an activity-log record.
+
+### Additional Stage — Commitment Risk and Recovery
+
+The current prototype includes a simulated emergency-leave workflow.
+
+When an approved leave event affects a saved appointment, ORO AI evaluates the impact, flags the commitment and proposes an available qualified replacement when possible.
+
+A manager must approve the change.
+
+---
+
+## 6. Demonstration Scenario
+
+The application uses a fictional air-conditioning company:
+
+**CoolAir Services Sdn Bhd — Cheras, Kuala Lumpur**
+
+All prices, staff names, schedules and company rules in this example are synthetic.
+
+### Customer Request
+
+> "Boss, can you install 6 units of 1.5HP aircon at our Cheras office this Friday? Send quote please."
+
+The demonstration uses a fixed reference date of 21 October 2026.
+
+ORO AI extracts the supported service details:
+
+| Field | Result |
+|---|---|
+| Service | Air-conditioning installation |
+| Specification | 1.5HP |
+| Quantity | 6 units |
+| Location | Cheras |
+| Requested Appointment | Friday, 23 October 2026 |
+
+### Quotation Calculation
+
+The fictional service catalogue lists installation of a 1.5HP unit at RM190.
+
+**6 × RM190 = RM1,140**
+
+The quotation is calculated using the stored price and requested quantity.
+
+### Availability Verification
+
+The simulated job requires two qualified technicians, including at least one senior technician.
+
+However, on Friday, 23 October:
+
+- Ali is on approved leave.
+- Bala has an existing work assignment.
+- Mei has an existing work assignment.
+- Chong has an existing work assignment.
+
+**Result: The requested appointment cannot be fulfilled with the available crew.**
+
+### Recommended Alternative
+
+ORO AI identifies Monday, 26 October 2026 as a feasible alternative in the demonstration dataset.
+
+**Recommended technicians:** Bala (Senior Technician) and Mei (Qualified Technician).
+
+Manager Faizal can review the quotation, proposed crew and appointment before confirmation.
+
+### Recovery Demonstration
+
+After the Monday booking is approved, the application can simulate Bala receiving approved emergency leave.
+
+The system evaluates the saved appointment and marks it **At Risk**.
+
+It then identifies Chong as a potential replacement, subject to availability checks and manager approval.
+
+The resulting change is recorded in the activity log.
+
+**This demonstrates the key idea behind ORO AI: a quotation should be backed by a realistic operational commitment.**
+
+---
+
+## 7. Main Features
+
+| Feature | Description |
+|---|---|
+| **Business Dashboard** | Summarises quotations, bookings, scheduling conflicts and items requiring attention. |
+| **Customer Enquiry Workspace** | Processes supported multilingual service enquiries. |
+| **Quotation Generator** | Calculates prices from a predefined service catalogue, including supported multi-service enquiries. |
+| **Smart Scheduling** | Evaluates technician availability, approved leave, existing assignments and simplified crew requirements. |
+| **Alternative Date Recommendations** | Searches working days for feasible appointment options. |
+| **Manager Approval** | Supports quotation approval and rejection through a demonstration role workflow. |
+| **Staff Schedule** | Displays employee leave, existing jobs and confirmed appointments. |
+| **Commitment Risk Monitor** | Detects risk from the built-in emergency-leave event. |
+| **Recovery Assistant** | Recommends and supports manager-approved replacement-crew assignments. |
+| **Activity Log** | Stores significant actions and decisions. |
+| **Voice Input** | Offers browser speech recognition where supported and a clearly labelled simulated transcription mode. |
+| **Responsive Web App / PWA** | Includes mobile-responsive design and installable-web-app provisions. |
+
+The application also demonstrates a fictional Orbyte Credit Wallet and temporary crew-hold indicator. Neither represents a real financial transaction or a guaranteed database reservation before manager approval.
+
+---
+
+## 8. Technology Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React, TypeScript, Vite |
+| Styling | Tailwind CSS |
+| Backend | Node.js, Express, TypeScript |
+| Database | SQLite |
+| API Specification | OpenAPI |
+| Input and API Validation | Zod |
+| API Data Handling | React Query |
+| Package Management | pnpm Workspaces |
+| Testing | Node.js Test Runner |
+| Development and Deployment | Replit |
+| Version Control | Git and GitHub |
+| Voice Transcription Integration | Optional OpenAI speech-to-text support, not currently configured |
+| Orbyte Ecosystem Integration | Simulated adapters and synthetic business records |
+
+### Why This Architecture?
+
+The team chose a web-based solution to make the prototype accessible from both desktop and mobile browsers without developing separate native applications.
+
+SQLite provides a straightforward database for the prototype, while the frontend and backend separate user interaction from business logic.
+
+Deterministic calculations are used for critical scheduling and pricing decisions, improving their consistency and testability.
+
+---
+
+## 9. AI and Automation Transparency
+
+Although the product is branded **ORO AI**, it is important to distinguish its implemented automation from its optional AI capabilities.
+
+### Implemented Enquiry Processing
+
+The current application uses **rule-based multilingual text extraction**.
+
+It recognises supported service descriptions, quantities, equipment specifications, dates and locations using programmed patterns.
+
+It can process tested English, Bahasa Melayu, Manglish and selected Chinese expressions.
+
+However, it is **not currently powered by a live large language model for general-purpose enquiry understanding**.
+
+Unusual, incomplete or ambiguous messages may require clarification or manual correction of the original enquiry.
+
+### Voice Processing
+
+The application includes browser-based speech recognition where supported.
+
+It also contains an optional external transcription integration, but the supported speech-service credentials are not currently configured.
+
+The built-in voice demonstration uses a **labelled simulated transcript** rather than claiming to transcribe arbitrary uploaded audio.
+
+### Operational Decision-Making
+
+The following capabilities are rule-based and data-driven:
+
+- Quotation calculations.
+- Technician availability verification.
+- Leave-conflict detection.
+- Skill and seniority matching.
+- Alternative scheduling.
+- Booking approval checks.
+- Commitment risk evaluation.
+- Recovery recommendations.
+
+This separation prevents the system from relying on AI-generated guesses for critical business decisions.
+
+### Development Tools
+
+The team has used AI-assisted development tools, including ChatGPT, Gemini, Claude Code and Replit-assisted development workflows.
+
+These tools support project planning, programming, debugging, code review and documentation.
+
+The use of development assistants is distinct from deploying an AI model inside the application.
+
+The team's final technical declaration should identify the specific tools and services actually used.
+
+---
+
+## 10. Technical Architecture
+
+The project uses a pnpm monorepo.
+
+```text
+ORO-AI/
+├── artifacts/
+│   ├── oro-ai/
+│   │   ├── src/
+│   │   │   ├── pages/
+│   │   │   ├── components/
+│   │   │   └── lib/
+│   │   └── public/
+│   ├── api-server/
+│   │   ├── src/
+│   │   │   ├── lib/oro/
+│   │   │   └── routes/
+│   │   └── tests/
+│   ├── oro-design-system/
+│   └── mockup-sandbox/
+├── lib/
+│   └── api-spec/
+├── scripts/
+├── README.md
+├── orbyte-api-assumptions.md
+├── package.json
+└── pnpm-workspace.yaml
 ```
 
-| Step | What happens in the demo |
+### Important Backend Modules
+
+| Module | File |
 |---|---|
-| 1. Trigger | *"Boss, can you install 6 units of 1.5HP aircon at our Cheras office this Friday?"* |
-| 2. Connected data | Ali is on leave Friday. Bala, Mei and Chong already have Friday jobs (simulated Orbyte records). |
-| 3. Decision logic | 6 × RM190 = **RM1,140**. Friday is **not feasible**. **Monday 26 Oct** is feasible with Bala (senior) + Mei. |
-| 4. Human approval | Manager Faizal clicks **Approve Quotation & Confirm Slot**. The server checks availability again before booking. |
-| 5. Visible outcome | Quotation **#ORO-1023** is saved, the crew is reserved, and every action is in the activity log. A printable quotation is available. |
+| Enquiry Parser | `artifacts/api-server/src/lib/oro/parser.ts` |
+| Service Catalogue | `artifacts/api-server/src/lib/oro/services.ts` |
+| Scheduling Engine | `artifacts/api-server/src/lib/oro/scheduling.ts` |
+| Availability Logic | `artifacts/api-server/src/lib/oro/availability.ts` |
+| Approval Logic | `artifacts/api-server/src/lib/oro/approval.ts` |
+| Commitment Risk | `artifacts/api-server/src/lib/oro/risk.ts` |
+| Orbyte Mock Adapters | `artifacts/api-server/src/lib/oro/orbyte-adapters.ts` |
+| Voice Processing | `artifacts/api-server/src/lib/oro/voice.ts` |
+| Synthetic Data | `artifacts/api-server/src/lib/oro/seed.ts` |
+
+Further integration assumptions are documented in [`orbyte-api-assumptions.md`](orbyte-api-assumptions.md).
 
 ---
 
-## Tech stack
+## 11. How to Use ORO AI
 
-| Part | Technology |
-|---|---|
-| Web app | React + Vite + Tailwind CSS (`artifacts/oro-ai`) |
-| API server | Node.js 24 + Express 5 + TypeScript (`artifacts/api-server`) |
-| Database | SQLite, using Node's built-in `node:sqlite` (4 tables: `staff`, `capacity_blocks`, `quotes`, `activity_log`) |
-| API contract | OpenAPI (`lib/api-spec/openapi.yaml`), with generated React Query hooks and Zod validation |
-| Orbyte integration | Mock adapters only. See [`orbyte-api-assumptions.md`](orbyte-api-assumptions.md) |
-| Voice input | Browser speech recognition / audio recorder; optional OpenAI speech-to-text; labelled simulated transcript when no key is set |
-| Mobile | Responsive layout (checked at 375px): bottom tab bar + "More" sheet on phones, sidebar on desktop; installable web app (PWA): `manifest.json`, icons, online-first service worker |
-| Tests | Node's built-in test runner (`node --test`) |
-| Package manager | pnpm workspaces (monorepo) |
+### Live Demonstration
 
-### Where the important code is
+Visit:
 
-| What | File |
-|---|---|
-| Enquiry reading (EN / BM / Chinese keywords) | `artifacts/api-server/src/lib/oro/parser.ts` |
-| Voice-to-Quote (transcription only) | `artifacts/api-server/src/lib/oro/voice.ts`, `artifacts/oro-ai/src/components/voice-input.tsx` |
-| Price list | `artifacts/api-server/src/lib/oro/services.ts` |
-| Crew rules, feasibility, alternative dates | `artifacts/api-server/src/lib/oro/scheduling.ts`, `availability.ts` |
-| Manager approval and double-booking protection | `artifacts/api-server/src/lib/oro/approval.ts`, `quotes.ts` |
-| Leave-change risk monitor and recovery | `artifacts/api-server/src/lib/oro/risk.ts` |
-| Mock Orbyte adapters | `artifacts/api-server/src/lib/oro/orbyte-adapters.ts` |
-| Simulated Orbyte Credit Wallet | `artifacts/api-server/src/lib/oro/wallet.ts`, `artifacts/oro-ai/src/components/wallet-badge.tsx` |
-| Price validity vs. crew-slot hold | `artifacts/oro-ai/src/components/quote-terms.tsx` |
-| Installable app (PWA) | `artifacts/oro-ai/public/manifest.json`, `public/icons/`, `public/sw.js`, `index.html` |
-| Synthetic demo data | `artifacts/api-server/src/lib/oro/seed.ts` |
-| App shell (sidebar, mobile tabs, role switch) | `artifacts/oro-ai/src/components/shell.tsx` |
-| Pages: Dashboard, New Enquiry, Quotations, Staff Schedule, Manager Approval, Risk Monitor, Activity Log | `artifacts/oro-ai/src/pages/` (`dashboard.tsx`, `workspace.tsx`, `quotations.tsx`, `schedule.tsx`, `approvals.tsx`, `risk-monitor.tsx`, `activity.tsx`) |
-| Automated tests | `artifacts/api-server/tests/` |
+**https://oro-ai.replit.app**
+
+The demonstration can be explored using the synthetic company records provided in the application.
+
+### Suggested Demonstration Steps
+
+1. Open the application and select **Reset Demo State** to restore the prepared example.
+2. Switch to Manager Faizal and navigate to **New Enquiry**.
+3. Load the Friday scheduling-conflict scenario.
+4. Analyse the customer message and review the generated RM1,140 quotation.
+5. Inspect the reason the requested Friday appointment is unavailable.
+6. Select the recommended Monday appointment with Bala and Mei.
+7. Approve the quotation and confirm the appointment.
+8. Open the staff schedule or quotations page to inspect the saved record.
+9. Trigger Bala's simulated emergency leave.
+10. Review the **At Risk** commitment and approve an available replacement if proposed.
+11. Open the activity log to inspect the recorded decisions.
+
+The role selector and emergency-leave trigger are demonstration controls, not production authentication or live external events.
 
 ---
 
-## Run it on Replit (recommended)
+## 12. Installation and Development
 
-1. Open the project on Replit.
-2. Click **Run**. This starts two services:
-   - **API Server** (`artifacts/api-server`) on `/api`
-   - **ORO AI web app** (`artifacts/oro-ai`) on `/`
-3. Open the **Preview** pane and choose **ORO AI**.
-4. The database is created and filled with synthetic data automatically on first start.
-   It is stored at `artifacts/api-server/data/oro.db`, which Git ignores.
+### Requirements
 
-To share it with judges, use Replit's **Publish** button. Judges only need the published URL; they do not need to install anything.
+- Node.js 24 or later.
+- pnpm.
+- Git.
 
-### The pages
-
-The left sidebar (bottom tabs on a phone) has seven pages. Every number on them comes from the database; nothing is hard-coded.
-
-| Page | What it shows |
-|---|---|
-| **Dashboard** (`/`) | Counts of enquiries, pending and approved quotations, upcoming appointments and scheduling conflicts, plus a "Needs attention" list |
-| **New Enquiry** (`/enquiry`) | The quotation workspace: paste or dictate the enquiry, get the price, the date check and Option A / B. Managers approve here directly; Sales staff can **Send to Manager for approval** instead |
-| **Quotations** (`/quotations`) | Every quote with status (Pending / Approved / Declined), crew and appointment; click a row for the printable quotation |
-| **Staff Schedule** (`/schedule`) | A week board per technician: leave from eLeave, Orbyte Work jobs and ORO bookings (click a booking to open its quote) |
-| **Manager Approval** (`/approvals`) | The queue of drafts sent by Sales. Each draft is re-checked against today's leave and job records; the manager picks a feasible date and approves, or declines with a reason |
-| **Risk Monitor** (`/risk`) | Approved commitments and their risk status, with the recovery flow when a technician's leave is approved later |
-| **Activity Log** (`/activity`) | Every action with time, actor and details, searchable |
-
-The header shows the demo **reference date (Wed 21 Oct 2026)**, the role switch (**Mei** = Sales, **Faizal** = Manager) and **Reset Demo State**.
-
-### Demo script (about 3 minutes)
-
-1. Click **Reset Demo State** (top right) to start clean.
-2. Choose **Faizal** (Manager) in the header role switch and open **New Enquiry**.
-3. Click the chip **Scenario 1: Flagship Friday Conflict (EN)**, then **Analyse Enquiry**.
-   You will see RM1,140, a Friday conflict with reasons, and Monday offered as Option B.
-   The card also shows **Quotation Price Valid: 7 Days** and a **Crew Slot Temporary Hold: 30s (Demo Simulation)** countdown.
-   Optional: click **Simulate Hold Expiry**. The badge turns red (**HOLD EXPIRED — Needs Re-verification before confirming**) and the approve button locks until you click **Re-verify Availability**.
-4. Switch to **Mei** (Sales). The approve button locks with the badge "Requires Manager (Faizal) Approval". Switch back to Manager.
-5. Click **Approve Quotation & Confirm Slot** on Monday, then **View Printable Quotation** → **Print / Save PDF**.
-   The **Orbyte Credit Wallet** pill in the top banner drops from 25.00 to **24.90 Credits**.
-   Open **Staff Schedule**: Bala and Mei now show an **ORO-1023** booking on Monday. **Dashboard** counts update too.
-6. Click **Simulate Orbyte Event: Approve Bala's Emergency Leave (Mon, 26 Oct)**. A red **COMMITMENT AT RISK** card recommends **Chong**.
-7. Click **Approve Recovery & Update Orbyte Work**. The crew becomes Chong + Mei, and the activity log records the swap.
-   The wallet drops again, to **24.80 Credits**.
-8. Optional: click **Simulate 10s Contractor Voice Note** (Voice-to-Quote). Wait about 9 seconds, or click Skip, and the RM310 servicing quote appears.
-9. Optional: try Scenarios 2-4 (Bahasa Melayu multi-service, Chinese enquiry, missing information).
-   Click **Reset Demo State** before each one, because Scenario 1's booking uses up Monday's crew.
-10. Optional, the Sales → Manager hand-off: as **Mei**, analyse Scenario 2 and click **Send to Manager for approval**.
-    Switch to **Faizal** and open **Manager Approval** (the sidebar badge shows the count). The draft is re-checked, a feasible date is pre-selected; click **Approve & confirm date**, or **Decline** and type a reason. Both appear in **Quotations** and the **Activity Log**.
-
-### Voice-to-Quote (optional feature A)
-
-Under the message box there is a **Voice Note / Audio Input** bar with three buttons:
-
-- **Simulate 10s Contractor Voice Note** plays a short synthetic voice note: *"Boss, client at Cheras Condo wants servicing for two 1.5HP aircons and a chemical wash this Monday, 26 October."*
-  Its words go into the message box, labelled **Simulated Demo Transcription**, and the normal analysis runs: 2 × RM80 + 1 × RM150 = **RM310**.
-- **Upload Audio File (.mp3 / .m4a / .wav)**: to test it, download the sample with the **"Sample .mp3 for upload test"** link, then upload it.
-- **Record Voice Note** uses the browser's speech recognition, or the audio recorder if that isn't available. The browser must allow the microphone. Inside the Replit preview pane it is usually blocked, so open the app in its own tab.
-
-The voice layer only produces text. You can edit the text, and it goes through **the same** extraction, pricing and scheduling code as a typed message.
-Every transcription is recorded in the activity log as `VOICE_TRANSCRIBED`.
-
-**Real transcription is optional and paid.** It is used only for uploaded or recorded files, and only when a key is configured:
-
-- `OPENAI_API_KEY` as a Replit **Secret** (model `whisper-1`, OpenAI list price about **US$0.006 per minute** of audio), or
-- Replit's built-in OpenAI integration (model `gpt-4o-mini-transcribe`, about **US$0.003 per minute**, deducted from Replit credits).
-
-A 10-second voice note costs well under one US cent. Check current prices before relying on these figures.
-Without a key, or if the service fails, the app shows the demo sample's words with the **Simulated Demo Transcription** label.
-It never pretends to have heard a file it could not transcribe. Typing the message always works as a fallback.
-
-### Orbyte ecosystem polish and mobile app
-
-- **Orbyte Credit Wallet (simulated).** The top banner shows `Orbyte Credit Wallet: 25.00 Credits`.
-  This demonstrates a usage-based (pay-per-transaction) pricing model; it is **not real money** and no payment service is connected.
-  Each manager approval of a quotation or of a recovery swap costs 0.10 credits. The activity log records it as
-  `0.10 Orbyte Credits deducted (Pay-per-transaction) ...`. Refused or blocked approvals cost nothing.
-  **Reset Demo State** puts the wallet back to 25.00. The balance is calculated from the activity log, so no extra table is needed.
-- **Price validity vs. crew hold.** These are two separate timers, as the brief asks:
-  - The price is valid for **7 days**.
-  - The crew slot hold is a **30-second demo simulation** of a short hold. When it runs out, or when you click **Simulate Hold Expiry**, the slot must be re-checked before anyone can confirm it.
-    This shows that ORO AI does not block a technician's day forever while a customer decides.
-  - The hold is shown on screen only; nothing is locked in the database during the countdown.
-    The crew is reserved in the database only when the manager approves, and the server re-checks availability at that moment.
-- **Phone / installable app (PWA).**
-  - The page works at phone width (375px). On phones, the result card appears right under the enquiry form.
-  - To install it, open the **published** URL on the phone:
-    - **Android (Chrome):** menu ⋮ → **Install app** / **Add to Home screen**.
-    - **iPhone (Safari):** Share → **Add to Home Screen**.
-  - It opens full-screen with the ORO AI icon and the navy (`#0F1E33`) and gold (`#B99545`) theme.
-  - The app is **online-first**: it does not work offline and saves nothing offline. Without a connection it shows a "You are offline" page.
-
-### Running outside Replit
-
-You need Node.js 24 or newer and pnpm. Run `pnpm install`, then `npm test` to run the automated tests.
-The web app expects the API at `/api` on the same address. Replit's router handles this.
-If you run it elsewhere, you would need to add a reverse proxy that sends `/api` to the API server. This is not set up in this repository.
-
----
-
-## Automated tests: `npm test`
-
-From the project root, run:
+### Clone the Repository
 
 ```bash
-npm test
+git clone https://github.com/firdieadham1108-bot/ORO-AI.git
+cd ORO-AI
 ```
 
-(`pnpm test` works too.) The test runner:
+### Install Dependencies
 
-1. builds a private test copy of the API server
-2. starts it with its **own temporary database**, so your demo data is not touched and the app does not need to be running
-3. runs the 10 required test cases from the hackathon brief (plus 9 extra checks) against the real backend logic and the real SQLite database
-4. prints PASS (✔) or FAIL (✖) for each test and exits with an error code if anything fails
+```bash
+pnpm install
+```
 
-| # | Test | What is checked |
-|---|---|---|
-| 1 | Correct quotation | 6 × 1.5HP installation = **RM1,140** |
-| 2 | Different quantity | 4 × 1.5HP installation = **RM760** |
-| 3 | Unavailable date | Friday 23 Oct 2026 is rejected: Ali on leave, Bala / Mei / Chong already assigned, with reasons |
-| 4 | Available alternative | Monday 26 Oct 2026 recommended with **Bala + Mei**; weekends never suggested |
-| 5 | Data changes | Changing leave or job records changes the answer (Friday becomes feasible; Monday's crew changes) |
-| 6 | Missing details | *"Can you install aircon?"* asks for size, quantity, date and location; no price is guessed |
-| 7 | Manager approval | The quote is saved as approved by Faizal, the crew is booked in the database, the action is in the activity log, and Sales staff get HTTP 403 |
-| 8 | Double-booking prevention | Simultaneous confirmations cannot book the same technician twice; an infeasible date is refused at approval time |
-| 9 | Manglish / BM | *"Boss, Friday boleh pasang 6 biji 1.5HP dekat Cheras?"* → 6 × 1.5HP install, Fri 23 Oct, Cheras |
-| 10 | Leave-change detection + recovery | Bala's approved Monday leave flags the job **AT_RISK** and recommends **Chong**; only the manager can approve the swap |
+### Build the Project
 
-Nine extra checks also run:
+```bash
+pnpm build
+```
 
-- recovery skips a technician who is already booked
-- preset scenarios 2 and 3 behave as expected
-- the simulated voice note is labelled, logged as `VOICE_TRANSCRIBED` and quoted at RM310 by the same pipeline
-- voice uploads without a key are clearly labelled as simulated, and bad files are refused
-- the Orbyte Credit Wallet: approval and recovery each cost 0.10 credits, refused actions are free, and a reset restores 25.00
-- the Dashboard summary counts match the quotes and commitments in the database
-- the Staff Schedule shows Ali's Friday leave, the Friday Orbyte jobs, weekends as non-working days, and a booking after approval
-- a draft sent by Sales is re-checked, approved by the manager on a feasible date (crew booked, 0.10 credits charged) and refused for Sales staff (HTTP 403)
-- declining a draft keeps it out of the schedule, records the reason, and costs nothing
+### Run Automated Tests
 
-The test server always runs **without** speech keys, so results are the same on every machine.
+```bash
+pnpm test
+```
+
+### Running the Web Application
+
+The recommended development environment is Replit, where the project configuration starts the API server and frontend application.
+
+The frontend expects the backend API at `/api` on the same origin.
+
+Running outside Replit may require a local reverse proxy or additional development configuration.
 
 ---
 
-## Safety and honesty notes
+## 13. Testing and Validation
 
-- All data is **synthetic**. Do not enter real customer personal data.
-- Orbyte, eLeave, Work and approvals are **simulated** (see [`orbyte-api-assumptions.md`](orbyte-api-assumptions.md)).
-- The role switch is a **demo control, not real login**.
-- The Orbyte Credit Wallet and the 30-second crew hold are **simulations** for the demo (no real money; no database lock during the countdown).
-- **Never commit secrets.** Do not commit `.env` files, API keys or passwords. Use Replit **Secrets** instead.
-  `.gitignore` already excludes `.env` and `.env.*`.
+Automated tests are included in the repository to evaluate the core quotation, scheduling and commitment workflows.
 
-## License
+### Latest Reported Test Results
 
-Licensed under the [Apache License 2.0](LICENSE).
-Copyright 2026 the ORO AI team (SDC Hackathon 2026).
+| Metric | Result |
+|---|---|
+| Test environment | Current Replit development workspace |
+| Tests passed | **44** |
+| Tests failed | **0** |
+| Tests skipped | **0** |
+
+These results were reported from the team's latest Replit workspace audit.
+
+**Verification note:** The tested Replit workspace has not yet been confirmed to match the latest GitHub commit exactly, and a complete browser-based end-to-end test of the published deployment remains outstanding.
+
+### Tested Behaviours Include
+
+- Correct quotation calculation.
+- Supported multilingual enquiry extraction.
+- Leave and existing-job conflict checking.
+- Alternative appointment selection.
+- Manager approval and quotation rejection.
+- Concurrent double-booking prevention using the same SQLite database.
+- Persistent booking and activity records within the same database.
+- Simulated emergency-leave risk identification.
+- Manager-approved replacement assignments.
+
+The test suite uses a separate temporary SQLite database to avoid modifying the demonstration dataset.
+
+---
+
+## 14. Current Limitations
+
+ORO AI is a functional, narrowly scoped hackathon prototype rather than a production-ready business platform.
+
+Its current limitations include:
+
+- Enquiry extraction is rule-based and limited to supported language patterns.
+- There is no structured editor for directly changing extracted service line items.
+- Service prices are defined in code, without a business-owner price-management interface.
+- Scheduling uses simplified full-day appointments and basic technician qualification rules.
+- Public holidays, travel time and optimised multi-appointment routing are not supported.
+- Risk detection is triggered by the built-in simulated leave event rather than continuous monitoring of arbitrary external changes.
+- Uploaded-audio transcription is currently simulated unless a supported external service is configured.
+- The demonstration role selector is not production-grade authentication.
+- SQLite data persistence across a deployment replacement is not guaranteed.
+- Unsubmitted enquiry text is not always retained when navigating away.
+- Changes to enquiry text after analysis may require explicit re-analysis to prevent stale results from being used.
+
+Further testing, production-grade security and stronger data persistence would be required before deployment for real SME operations.
+
+---
+
+## 15. SDG 8 — Decent Work and Economic Growth
+
+ORO AI is aligned with **United Nations Sustainable Development Goal 8: Decent Work and Economic Growth**.
+
+The project explores how service SMEs can use digital workflows to improve operational efficiency, coordinate workers more effectively and reduce avoidable administrative work.
+
+### Expected Benefits
+
+**SME productivity**
+
+Reduce repetitive quotation preparation and manual schedule-checking tasks.
+
+**Better workforce coordination**
+
+Improve visibility into employee assignments, approved leave and available technical skills.
+
+**Reduced operational disruption**
+
+Identify scheduling conflicts before approval and support recovery when a confirmed appointment becomes at risk.
+
+**Customer confidence**
+
+Help businesses communicate more realistic appointment commitments and preserve their reputation for reliability.
+
+### Proposed Performance Indicators
+
+| Indicator | How We Would Measure It |
+|---|---|
+| Quotation preparation time | Compare timed manual quotations with the ORO AI workflow for the same test enquiries. |
+| Scheduling conflict detection | Measure conflicts correctly identified against a prepared set of staffing scenarios. |
+| Booking accuracy | Check whether confirmed bookings meet all implemented crew and availability rules. |
+| Administrative workload | Compare the number of manual steps required in the existing workflow and the prototype. |
+| Recovery effectiveness | Measure whether the application can identify an affected booking and propose a qualified replacement. |
+
+**Evidence status:** The team has not yet conducted a formal SME user study or established measured commercial time savings or cost reductions. These KPIs describe intended evaluation methods rather than achieved outcomes.
+
+The project therefore does not claim a verified percentage improvement in productivity or revenue.
+
+---
+
+## 16. Commercial Potential
+
+ORO AI is intended for small service companies that depend on technician scheduling and customer appointments.
+
+Potential users include:
+
+- Air-conditioning installation and maintenance businesses.
+- Motorcycle repair workshops.
+- Electrical and plumbing contractors.
+- Equipment repair services.
+- Other technician-based service SMEs.
+
+### Potential Business Value
+
+ORO AI could help SMEs reduce costs associated with unnecessary coordination, missed scheduling conflicts and avoidable appointment changes.
+
+By encouraging businesses to verify their capacity before promising a service date, the platform also aims to preserve customer trust.
+
+A future commercial version could offer a subscription or usage-based model, but no commercial pricing model has been validated.
+
+The current Orbyte Credit Wallet is a simulated demonstration of a possible transaction-based approach and does not represent actual billing.
+
+---
+
+## 17. Challenges and Learning Outcomes
+
+Team I Forget consists of five university students with limited prior software development experience.
+
+The team selected a practical SME problem that could be represented through a realistic and testable end-to-end workflow.
+
+During development, the team explored several challenges:
+
+**Integrating multiple business functions**
+
+Quotation creation, employee availability and manager approval needed to operate as one connected process.
+
+**Handling informal customer communication**
+
+Customer requests may use different languages, incomplete details and non-standard phrasing.
+
+**Balancing intelligence and reliability**
+
+The project uses deterministic rules for critical pricing and scheduling decisions rather than allowing AI to invent business facts.
+
+**Preventing scheduling conflicts**
+
+The team implemented availability revalidation and database-level safeguards for competing booking requests.
+
+**Designing for practical adoption**
+
+The application was developed as a responsive website to make the prototype accessible across desktop and mobile devices without separate native applications.
+
+The development process also demonstrated how AI-assisted programming tools can help beginners prototype and test business software while still requiring human planning, verification and evaluation.
+
+---
+
+## 18. Future Development
+
+Future improvements may include:
+
+1. Genuine LLM-assisted multilingual customer enquiry extraction.
+2. Structured quotation editing and owner-managed service prices.
+3. More realistic job-duration and technician scheduling models.
+4. Public-holiday calendars, travel time and route planning.
+5. Automatic commitment monitoring through live events or supported webhooks.
+6. Real Orbyte API integration, subject to access and documentation.
+7. Real WhatsApp Business communication integration.
+8. Stronger authentication and user permissions.
+9. Durable production database hosting and improved deployment reliability.
+10. Usability studies and pilot testing with actual Malaysian SMEs.
+
+These enhancements are planned possibilities and are not claimed as completed functionality.
+
+---
+
+## 19. Team Information
+
+| Field | Information |
+|---|---|
+| **Official Team Name** | I Forget |
+| **Project Name** | ORO AI |
+| **Hackathon** | SDC Hackathon 2026 |
+| **Challenge Domain** | Domain 2 — Orbyte Smart SME Challenge |
+| **University** | Asia Pacific University of Technology & Innovation (APU) |
+| **SDG Track** | SDG 8 — Decent Work and Economic Growth |
+| **Team Leader** | Wong Zhong Jie |
+| **Team Size** | 5 members |
+
+### Team Members
+
+| Name | Position |
+|---|---|
+| **Wong Zhong Jie** | Team Leader |
+| **Cherryl Ng Huijane** | Team Member |
+| **Irwin Wong Jiong Liang** | Team Member |
+| **Balshaan Singh A/L Malvinder Singh** | Team Member |
+| **Wan Mohamad Firdie Adham Bin Wan Hairul Azrie** | Team Member |
+
+### Project Responsibilities
+
+The team organised its development around five work areas:
+
+| Work Area | Responsibility |
+|---|---|
+| Technical Development | Application integration, backend/frontend implementation and deployment |
+| Quotation & Business Logic | Service data, pricing requirements and quotation testing |
+| Scheduling & Verification | Workforce availability rules, conflict scenarios and testing |
+| UI/UX | Interface design, usability review and responsive experience |
+| Documentation & Presentation | Problem research, project documentation, presentation slides and demonstration video |
+
+Individual work-area assignments can be added once the team confirms the final contribution record.
+
+All team members contribute to the project through planning, review, testing and presentation preparation.
+
+---
+
+## 20. Hackathon Submission Materials
+
+The following materials will be linked or included when finalised:
+
+| Deliverable | Status |
+|---|---|
+| Source Code Repository | Available; public access must be enabled |
+| Live Application | Deployed; public access must be verified |
+| Preliminary Proposal | To be linked |
+| Technical Tools Declaration | To be linked |
+| Replit Proof of Use | To be linked |
+| Presentation Slides | In preparation |
+| Demonstration Video | In preparation |
+
+All submission materials should comply with the latest organiser requirements.
+
+---
+
+## 21. License and Disclaimer
+
+The repository includes an Apache License 2.0.
+
+ORO AI was developed as a student hackathon prototype for SDC Hackathon 2026.
+
+All company, customer, employee, pricing, credit-wallet and scheduling data used in the demonstration are synthetic.
+
+The application is not affiliated with, endorsed by or connected to production Orbyte systems.
+
+ORO AI is not intended for unrestricted commercial or production use without further development, testing, data protection controls and security review.
+
+---
+
+### ORO AI — Don't Just Make Promises. Keep Them.
+
+**Helping service SMEs turn customer enquiries into better-informed, more reliable commitments.**
