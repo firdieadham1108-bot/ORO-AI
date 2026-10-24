@@ -13,7 +13,7 @@
 |---|---|
 | **Live Web Application** | [ORO AI — Live Demo](https://oro-ai.replit.app) |
 | **GitHub Repository** | [ORO AI Source Code](https://github.com/firdieadham1108-bot/ORO-AI) |
-| **Presentation Slides** | [Slide]((https://canva.link/v1jbxouj1mhkeks)) |
+| **Presentation Slides** |[Slides](https://canva.link/v1jbxouj1mhkeks)
 | **Demonstration Video** | [YT](https://youtu.be/B67TfU6jsbM) |
 
 ---
